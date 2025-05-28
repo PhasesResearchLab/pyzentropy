@@ -7,7 +7,23 @@
 (https://codecov.io/gh/materialsvirtuallab/python_template)
 -->
 
-# Introduction
+# PyZentropy
 
-This is a template for setting up Python packages in the Materials Virtual Lab. It comes with the standard Github
-workflows, pyproject and linting.
+## Installation
+It is recommended to first set up a virtual environment using Conda:
+
+    conda create -n pyzentropy python=3.12      
+    conda activate pyzentropy
+
+Clone the main branch of the repository:
+    
+    git clone https://github.com/nhew1994/pyzentropy.git
+
+Or clone a specific branch:
+    
+    git clone -b <branch_name> https://github.com/nhew1994/pyzentropy.git
+
+  Then move to `pyzentropy` directory and install in editable (`-e`) mode.
+
+    cd pyzentropy
+    pip install -e .
