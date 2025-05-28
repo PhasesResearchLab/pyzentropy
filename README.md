@@ -1,3 +1,6 @@
+[![Testing](https://github.com/nhew1994/pyzentropy/actions/workflows/test.yml/badge.svg)](https://github.com/nhew1994/pyzentropy/actions/workflows/test.yml)
+[![Linting](https://github.com/nhew1994/pyzentropy/actions/workflows/lint.yml/badge.svg)](https://github.com/nhew1994/pyzentropy/actions/workflows/lint.yml)
+
 # PyZentropy
 
 ## Installation
