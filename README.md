@@ -20,4 +20,4 @@ Or clone a specific branch:
   Then move to `pyzentropy` directory and install in editable (`-e`) mode.
 
     cd pyzentropy
-    pip install -e .
+    python -m pip install -e .
