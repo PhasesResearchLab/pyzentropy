@@ -1,12 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "python-template"
-version = "0.1.0"
-description = "Template for new Python code bases in Materials Virtual Lab."
+name = "pyzentropy"
+version = "0.0.0"
+description = "Zentropy: multiscale entropy approach"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = [
+    "numpy>=1.26",
+    "plotly>=5.18.0",
+    "scipy>=1.11.4",
+]
 authors = [
-    { name = "Shyue Ping Ong", email = "ongsp@ucsd.edu" },
+    { name = "Nigel L. E. Hew", email = "njh5724@psu.edu" },
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -21,10 +29,8 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["package"]
+keywords = ["entropy", "thermodynamics", "statistical mechanics", "materials", "science"]
+license = {text = "MIT"}
 
 [tool.black]
 line-length = 120
