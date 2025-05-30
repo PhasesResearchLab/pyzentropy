@@ -1,4 +1,5 @@
 # Standard Library Imports
+import os
 import pickle
 
 # Third-Party Library Imports
@@ -34,7 +35,8 @@ def test_configuration_shape_check():
 
 
 # Load test data once for all tests
-with open("test_data/test_configs.pkl", "rb") as f:
+test_data_path = os.path.join(os.path.dirname(__file__), "test_data", "test_configs.pkl")
+with open(test_data_path, "rb") as f:
     config_data = pickle.load(f)
 
 
