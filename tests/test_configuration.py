@@ -6,7 +6,7 @@ import pickle
 import numpy as np
 import pytest
 
-# Local Imports
+# PyZentropy Imports
 from pyzentropy.configuration import Configuration
 
 
