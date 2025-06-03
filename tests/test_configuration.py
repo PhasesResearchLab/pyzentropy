@@ -57,6 +57,7 @@ def test_configuration_param(config_key):
         entropies=config.entropies,
         heat_capacities=config.heat_capacities,
     )
+    instance.calculate_internal_energies()
     assert np.allclose(instance.internal_energies, config.internal_energies)
     instance.calculate_partition_functions(reference_helmholtz_energies)
     assert np.allclose(instance.partition_functions, config.partition_functions, equal_nan=True)

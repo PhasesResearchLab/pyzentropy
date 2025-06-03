@@ -94,8 +94,6 @@ class Configuration:
         self.probabilities = None
         self.probabilities_at_P = None
 
-        self.calculate_internal_energies()
-
     def calculate_internal_energies(self) -> None:
         """
         Calculate internal energies using the formula: E = F + T*S.
