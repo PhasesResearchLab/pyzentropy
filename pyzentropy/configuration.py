@@ -92,6 +92,7 @@ class Configuration:
         self.internal_energies = None
         self.partition_functions = None
         self.probabilities = None
+        self.probabilities_at_P = None
 
         self.calculate_internal_energies()
 
