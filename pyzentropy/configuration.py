@@ -41,9 +41,9 @@ class Configuration:
         temperatures: np.ndarray,
         helmholtz_energies: np.ndarray,
         helmholtz_energies_dV: np.ndarray,
-        helmholtz_energies_d2V2: np.ndarray,
-        entropies: np.ndarray,
-        heat_capacities: np.ndarray,
+        helmholtz_energies_d2V2: np.ndarray=None,
+        entropies: np.ndarray=None,
+        heat_capacities: np.ndarray=None,
     ):
         """
         Initialize a Configuration object and check input array shapes.
@@ -56,9 +56,9 @@ class Configuration:
             temperatures (np.ndarray): Array of temperatures (shape: [n_temperatures]).
             helmholtz_energies (np.ndarray): Helmholtz energies (shape: [n_temperatures, n_volumes]).
             helmholtz_energies_dV (np.ndarray): First derivatives of Helmholtz energies (shape: [n_temperatures, n_volumes]).
-            helmholtz_energies_d2V2 (np.ndarray): Second derivatives of Helmholtz energies (shape: [n_temperatures, n_volumes]).
-            entropies (np.ndarray): Entropies (shape: [n_temperatures, n_volumes]).
-            heat_capacities (np.ndarray): Heat capacities (shape: [n_temperatures, n_volumes]).
+            helmholtz_energies_d2V2 (np.ndarray): Second derivatives of Helmholtz energies (shape: [n_temperatures, n_volumes]). Defaults to None.
+            entropies (np.ndarray): Entropies (shape: [n_temperatures, n_volumes]). Defaults to None.
+            heat_capacities (np.ndarray): Heat capacities (shape: [n_temperatures, n_volumes]). Defaults to None.
         Raises:
             ValueError: If any input array does not match the expected shape.
         """
