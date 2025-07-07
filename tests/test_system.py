@@ -40,8 +40,8 @@ def make_system(configs, reference_helmholtz_energies):
     system.calculate_partition_functions()
     system.calculate_probabilities()
     system.calculate_helmholtz_energies(reference_helmholtz_energies)
-    system.calculate_helmholtz_energies_dV()
     system.calculate_entropies()
+    system.calculate_helmholtz_energies_dV()
     system.calculate_bulk_moduli()
     system.calculate_helmholtz_energies_d2V2()
     system.calculate_heat_capacities()
@@ -105,9 +105,7 @@ def test_probabilities():
     local_config_data = copy.deepcopy(config_data)
     system = make_system(local_config_data, reference_helmholtz_energies)
     for config in system.configurations.values():
-        assert np.allclose(
-            config.probabilities, expected_results.configurations[config.name].probabilities, equal_nan=True
-        )
+        assert np.allclose(config.probabilities, expected_results.configurations[config.name].probabilities, equal_nan=True)
     # Probabilities should sum to 1 (ignoring NaN)
     total_probabilities = np.zeros_like(system.configurations["config_0"].probabilities)
     for config in system.configurations.values():
@@ -116,9 +114,7 @@ def test_probabilities():
     assert np.allclose(total_probabilities[mask], 1.0)
     # Test error if system partition_functions is None
     system.partition_functions = None
-    with pytest.raises(
-        ValueError, match=re.escape("Partition functions not calculated. Call calculate_partition_functions() first.")
-    ):
+    with pytest.raises(ValueError, match=re.escape("Partition functions not calculated. Call calculate_partition_functions() first.")):
         system.calculate_probabilities()
 
 
@@ -128,9 +124,7 @@ def test_helmholtz_energies():
     system = make_system(local_config_data, reference_helmholtz_energies)
     assert np.allclose(system.helmholtz_energies, expected_results.helmholtz_energies, equal_nan=True)
     system.partition_functions = None
-    with pytest.raises(
-        ValueError, match=re.escape("Partition functions not calculated. Call calculate_partition_functions() first.")
-    ):
+    with pytest.raises(ValueError, match=re.escape("Partition functions not calculated. Call calculate_partition_functions() first.")):
         system.calculate_helmholtz_energies(reference_helmholtz_energies)
 
 
@@ -180,9 +174,7 @@ def test_entropies():
         system.calculate_entropies()
     # Error if system helmholtz_energies is None
     system.helmholtz_energies = None
-    with pytest.raises(
-        ValueError, match=re.escape("Helmholtz energies not calculated. Call calculate_helmholtz_energies() first.")
-    ):
+    with pytest.raises(ValueError, match=re.escape("Helmholtz energies not calculated. Call calculate_helmholtz_energies() first.")):
         system.calculate_entropies()
 
 
@@ -266,9 +258,7 @@ def test_calculate_pressure_properties():
     assert np.allclose(system.LCTE, expected_results.LCTE, equal_nan=True)
     assert np.allclose(system.Cp, expected_results.Cp, equal_nan=True)
     for config in system.configurations.values():
-        assert np.allclose(
-            config.probabilities_at_P, expected_results.configurations[config.name].probabilities_at_P, equal_nan=True
-        )
+        assert np.allclose(config.probabilities_at_P, expected_results.configurations[config.name].probabilities_at_P, equal_nan=True)
 
     # Test with all entropies set to None
     system2 = make_system(local_config_data, reference_helmholtz_energies)
@@ -300,9 +290,7 @@ def test_calculate_pressure_properties():
     # Test with helmholtz_energies set to None
     system4 = make_system(local_config_data, reference_helmholtz_energies)
     system4.helmholtz_energies = None
-    with pytest.raises(
-        ValueError, match=re.escape("Helmholtz energies not calculated. Call calculate_helmholtz_energies() first.")
-    ):
+    with pytest.raises(ValueError, match=re.escape("Helmholtz energies not calculated. Call calculate_helmholtz_energies() first.")):
         system4.calculate_pressure_properties(P=0)
 
     # Test with helmholtz_energies_dV set to None
@@ -321,6 +309,104 @@ def test_calculate_pressure_properties():
     [
         "helmholtz_energy_vs_volume",
         "helmholtz_energy_vs_temperature",
+        "helmholtz_energy_dV_vs_volume",
+        "helmholtz_energy_dV_vs_temperature",
+        "helmholtz_energy_d2V2_vs_volume",
+        "helmholtz_energy_d2V2_vs_temperature",
+        "entropy_vs_volume",
+        "entropy_vs_temperature",
+        "configurational_entropy_vs_volume",
+        "configurational_entropy_vs_temperature",
+        "heat_capacity_vs_volume",
+        "heat_capacity_vs_temperature",
+        "bulk_modulus_vs_volume",
+        "bulk_modulus_vs_temperature",
+    ],
+)
+def test_plot_vt_smoke(plot_type):
+    """Test that plot_vt runs without error for all supported plot types."""
+    local_config_data = copy.deepcopy(config_data)
+    system = make_system(local_config_data, reference_helmholtz_energies)
+    system.plot_vt(plot_type)
+
+
+def test_plot_vt_invalid_type():
+    """Test that an invalid plot type raises ValueError."""
+    local_config_data = copy.deepcopy(config_data)
+    system = make_system(local_config_data, reference_helmholtz_energies)
+    with pytest.raises(ValueError, match="Invalid plot type"):
+        system.plot_vt("not_a_real_plot_type")
+
+
+@pytest.mark.parametrize(
+    "plot_type, attr",
+    [
+        ("helmholtz_energy_vs_volume", "helmholtz_energies"),
+        ("helmholtz_energy_vs_temperature", "helmholtz_energies"),
+        ("helmholtz_energy_dV_vs_volume", "helmholtz_energies_dV"),
+        ("helmholtz_energy_dV_vs_temperature", "helmholtz_energies_dV"),
+        ("helmholtz_energy_d2V2_vs_volume", "helmholtz_energies_d2V2"),
+        ("helmholtz_energy_d2V2_vs_temperature", "helmholtz_energies_d2V2"),
+        ("entropy_vs_volume", "entropies"),
+        ("entropy_vs_temperature", "entropies"),
+        ("configurational_entropy_vs_volume", "configurational_entropies"),
+        ("configurational_entropy_vs_temperature", "configurational_entropies"),
+        ("heat_capacity_vs_volume", "heat_capacities"),
+        ("heat_capacity_vs_temperature", "heat_capacities"),
+        ("bulk_modulus_vs_volume", "bulk_moduli"),
+        ("bulk_modulus_vs_temperature", "bulk_moduli"),
+    ],
+)
+def test_plot_vt_missing_data(plot_type, attr):
+    """Test that missing required data for each plot type raises ValueError."""
+    local_config_data = copy.deepcopy(config_data)
+    system = System(local_config_data)
+    setattr(system, attr, None)
+    with pytest.raises(ValueError):
+        system.plot_vt(plot_type)
+
+
+@pytest.mark.parametrize(
+    "plot_type",
+    [
+        "helmholtz_energy_vs_volume",
+        "helmholtz_energy_dV_vs_volume",
+        "helmholtz_energy_d2V2_vs_volume",
+        "entropy_vs_volume",
+        "configurational_entropy_vs_volume",
+        "heat_capacity_vs_volume",
+        "bulk_modulus_vs_volume",
+    ],
+)
+def test_plot_vt_selected_temperatures(plot_type):
+    """Test that plot_vt works with selected_temperatures argument for relevant plot types."""
+    local_config_data = copy.deepcopy(config_data)
+    system = make_system(local_config_data, reference_helmholtz_energies)
+    system.plot_vt(plot_type, selected_temperatures=np.array([300, 600, 900]))
+
+
+@pytest.mark.parametrize(
+    "plot_type",
+    [
+        "helmholtz_energy_vs_temperature",
+        "helmholtz_energy_dV_vs_temperature",
+        "helmholtz_energy_d2V2_vs_temperature",
+        "entropy_vs_temperature",
+        "configurational_entropy_vs_temperature",
+        "heat_capacity_vs_temperature",
+        "bulk_modulus_vs_temperature",
+    ],
+)
+def test_plot_vt_selected_volumes(plot_type):
+    """Test that plot_vt works with selected_volumes argument."""
+    local_config_data = copy.deepcopy(config_data)
+    system = make_system(local_config_data, reference_helmholtz_energies)
+    system.plot_vt(plot_type, selected_volumes=np.array([100, 150, 200]))
+
+
+@pytest.mark.parametrize(
+    "plot_type",
+    [
         "helmholtz_energy_pv_vs_volume",
         "volume_vs_temperature",
         "CTE_vs_temperature",
@@ -333,78 +419,60 @@ def test_calculate_pressure_properties():
         "probability_vs_temperature",
     ],
 )
-def test_plot_smoke(plot_type):
-    """Test that plot runs without error for all supported plot types."""
+def test_plot_pt_smoke(plot_type):
+    """Test that plot_pt runs without error for all supported plot types."""
     local_config_data = copy.deepcopy(config_data)
     system = make_system(local_config_data, reference_helmholtz_energies)
     system.calculate_pressure_properties(P=0)
-    system.plot(plot_type)
+    system.plot_pt(plot_type)
 
 
-def test_plot_invalid_type():
+def test_plot_pt_invalid_type():
     """Test that an invalid plot type raises ValueError."""
     local_config_data = copy.deepcopy(config_data)
     system = make_system(local_config_data, reference_helmholtz_energies)
-    system.calculate_pressure_properties(P=0)
     with pytest.raises(ValueError, match="Invalid plot type"):
-        system.plot("not_a_real_plot_type")
-
-
-@pytest.mark.parametrize(
-    "plot_type, attr",
-    [
-        ("helmholtz_energy_vs_volume", "helmholtz_energies"),
-        ("helmholtz_energy_vs_temperature", "helmholtz_energies"),
-        ("helmholtz_energy_pv_vs_volume", "helmholtz_energies"),
-        ("volume_vs_temperature", "V0"),
-        ("CTE_vs_temperature", "CTE"),
-        ("LCTE_vs_temperature", "LCTE"),
-        ("entropy_vs_temperature", "S0"),
-        ("configurational_entropy_vs_temperature", "Sconf"),
-        ("heat_capacity_vs_temperature", "Cp"),
-        ("gibbs_energy_vs_temperature", "G0"),
-        ("bulk_modulus_vs_temperature", "B0"),
-        ("probability_vs_temperature", "probabilities_at_P"),
-    ],
-)
-def test_plot_missing_data(plot_type, attr):
-    """Test that missing required data for each plot type raises ValueError."""
-    local_config_data = copy.deepcopy(config_data)
-    system = System(local_config_data)
-    if plot_type == "probability_vs_temperature":
-        for config in system.configurations.values():
-            config.probabilities_at_P = None
-    else:
-        setattr(system, attr, None)
-    with pytest.raises(ValueError):
-        system.plot(plot_type)
+        system.plot_pt("not_a_real_plot_type")
 
 
 @pytest.mark.parametrize(
     "plot_type",
     [
-        "helmholtz_energy_vs_volume",
         "helmholtz_energy_pv_vs_volume",
+        "volume_vs_temperature",
+        "CTE_vs_temperature",
+        "LCTE_vs_temperature",
+        "entropy_vs_temperature",
+        "configurational_entropy_vs_temperature",
+        "heat_capacity_vs_temperature",
+        "gibbs_energy_vs_temperature",
+        "bulk_modulus_vs_temperature",
+        "probability_vs_temperature",
     ],
 )
-def test_plot_selected_temperatures(plot_type):
-    """Test that plot works with selected_temperatures argument for relevant plot types."""
+def test_plot_pt_missing_data(plot_type):
+    """Test that missing required data for each plot type raises ValueError."""
+    local_config_data = copy.deepcopy(config_data)
+    system = make_system(local_config_data, reference_helmholtz_energies)
+    with pytest.raises(ValueError):
+        system.plot_pt(plot_type)
+
+
+@pytest.mark.parametrize(
+    "plot_type",
+    ["helmholtz_energy_pv_vs_volume"],
+)
+def test_plot_pt_selected_temperatures(plot_type):
+    """Test that plot_pt works with selected_temperatures argument for relevant plot types."""
     local_config_data = copy.deepcopy(config_data)
     system = make_system(local_config_data, reference_helmholtz_energies)
     system.calculate_pressure_properties(P=0)
-    system.plot(plot_type, selected_temperatures=np.array([300, 600, 900]))
+    system.plot_pt(plot_type, selected_temperatures=np.array([300, 600, 900]))
 
 
-def test_plot_selected_volumes():
-    """Test that plot works with selected_volumes argument."""
-    local_config_data = copy.deepcopy(config_data)
-    system = make_system(local_config_data, reference_helmholtz_energies)
-    system.plot("helmholtz_energy_vs_volume", selected_volumes=np.array([100, 150, 200]))
-
-
-def test_plot_probabilities_ground_state():
-    """Test that plot works with and without ground_state argument."""
+def test_plot_pt_probabilities_ground_state():
+    """Test that plot_pt works with ground_state argument."""
     local_config_data = copy.deepcopy(config_data)
     system = make_system(local_config_data, reference_helmholtz_energies)
     system.calculate_pressure_properties(P=0)
-    system.plot("probability_vs_temperature", ground_state="config_0")
+    system.plot_pt("probability_vs_temperature", ground_state="config_0")

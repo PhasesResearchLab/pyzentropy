@@ -662,7 +662,6 @@ class System:
 
         # Central dictionary for plot behavior
         plot_data = {
-            # Pressure-dependent plots
             "helmholtz_energy_pv_vs_volume": {
                 "x": self.volumes,
                 "y": None,  # Will be handled below
