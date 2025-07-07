@@ -63,7 +63,6 @@ class System:
             "helmholtz_energies_d2V2",
             "entropies",
             "configurational_entropies",
-            "enthalpies",
             "bulk_moduli",
             "heat_capacities",
         ]
@@ -78,7 +77,6 @@ class System:
             "S0",
             "Sconf",
             "B0",
-            "H0",
             "CTE",
             "LCTE",
             "Cp",
@@ -459,24 +457,23 @@ class System:
             list: List of indices in `values` closest to each target.
         """
         return [np.argmin(np.abs(values - target)) for target in targets]
-
-    def plot(
+    
+    
+    def plot_vt(
         self,
         type: str,
         selected_temperatures: np.ndarray = None,
         selected_volumes: np.ndarray = None,
-        ground_state: str = None,
         width: int = 650,
         height: int = 600,
     ):
         """
-        Generate a plot for the specified thermodynamic quantity.
+        Generate a plot vs. volume or temperature for the specified thermodynamic quantity.
 
         Args:
             type (str): The type of plot to generate (e.g., "helmholtz_energy_vs_volume").
             selected_temperatures (np.ndarray, optional): Temperatures to highlight in the plot.
             selected_volumes (np.ndarray, optional): Volumes to highlight in the plot.
-            ground_state (str, optional): Name of the ground state configuration for probability plots.
             width (int, optional): Width of the plot in pixels.
             height (int, optional): Height of the plot in pixels.
 
@@ -503,6 +500,169 @@ class System:
                 "fixed": "volume",
                 "ylabel": "F (eV/{unit})",
             },
+            "helmholtz_energy_dV_vs_volume": {
+                "x": self.volumes,
+                "y": self.helmholtz_energies_dV,
+                "fixed": "temperature",
+                "ylabel": "dF/dV (eV/Å³)",
+            },
+            "helmholtz_energy_dV_vs_temperature": {
+                "x": self.temperatures,
+                "y": self.helmholtz_energies_dV,
+                "fixed": "volume",
+                "ylabel": "dF/dV (eV/Å³)",
+            },
+            "helmholtz_energy_d2V2_vs_volume": {
+                "x": self.volumes,
+                "y": self.helmholtz_energies_d2V2,
+                "fixed": "temperature",
+                "ylabel": "d²F/dV² ({unit}.eV/Å⁶)",
+            },
+            "helmholtz_energy_d2V2_vs_temperature": {
+                "x": self.temperatures,
+                "y": self.helmholtz_energies_d2V2,
+                "fixed": "volume",
+                "ylabel": "d²F/dV² ({unit}.eV/Å⁶)",
+            },
+            "entropy_vs_volume": {
+                "x": self.volumes,
+                "y": self.entropies,
+                "fixed": "temperature",
+                "ylabel": "S (eV/K/{unit})",
+            },
+            "entropy_vs_temperature": {
+                "x": self.temperatures,
+                "y": self.entropies,
+                "fixed": "volume",
+                "ylabel": "S (eV/K/{unit})",
+            },
+            "configurational_entropy_vs_volume": {
+                "x": self.volumes,
+                "y": self.configurational_entropies,
+                "fixed": "temperature",
+                "ylabel": "S<sub>conf</sub> (eV/K/{unit})",
+            },
+            "configurational_entropy_vs_temperature": {
+                "x": self.temperatures,
+                "y": self.configurational_entropies,
+                "fixed": "volume",
+                "ylabel": "S<sub>conf</sub> (eV/K/{unit})",
+            },
+            "heat_capacity_vs_volume": {
+                "x": self.volumes,
+                "y": self.heat_capacities,
+                "fixed": "temperature",
+                "ylabel": "C<sub>v</sub> (eV/K/{unit})",
+            },
+            "heat_capacity_vs_temperature": {
+                "x": self.temperatures,
+                "y": self.heat_capacities,
+                "fixed": "volume",
+                "ylabel": "C<sub>v</sub> (eV/K/{unit})",
+            },
+            "bulk_modulus_vs_volume": {
+                "x": self.volumes,
+                "y": self.bulk_moduli,
+                "fixed": "temperature",
+                "ylabel": "B (GPa)",
+            },
+            "bulk_modulus_vs_temperature": {
+                "x": self.temperatures,
+                "y": self.bulk_moduli,
+                "fixed": "volume",
+                "ylabel": "B (GPa)",
+            },
+        }
+
+        if type not in plot_data:
+            raise ValueError(f"Invalid plot type. Choose from: {', '.join(plot_data.keys())}")
+
+        data = plot_data[type]
+        x_data = data["x"]
+        fixed_by = data["fixed"]
+        y_label_template = data["ylabel"]
+        y_data = data["y"]
+
+        # Check for missing y_data (e.g., not calculated yet)
+        if y_data is None:
+            raise ValueError(f"{type} data not calculated. Run the appropriate calculation method first.")
+        elif isinstance(y_data, dict) and all(v is None for v in y_data.values()):
+            raise ValueError(f"{type} data not calculated. Run the appropriate calculation method first.")
+
+        # Select indices and labels for fixed_by
+        if fixed_by == "temperature":
+            selected = (
+                selected_temperatures
+                if selected_temperatures is not None
+                else np.linspace(self.temperatures.min(), self.temperatures.max(), 10)
+            )
+            indices = self._get_closest_indices(self.temperatures, selected)
+            legend_vals = self.temperatures[indices]
+            legend_fmt = lambda t: f"{int(t)} K" if t % 1 == 0 else f"{t} K"
+        elif fixed_by == "volume":
+            selected = (
+                selected_volumes
+                if selected_volumes is not None
+                else np.linspace(self.volumes.min(), self.volumes.max(), 10)
+            )
+            indices = self._get_closest_indices(self.volumes, selected)
+            legend_vals = self.volumes[indices]
+            legend_fmt = lambda v: f"{v:.2f} Å³"
+        else:
+            indices = None
+            legend_vals = None
+
+        fig = go.Figure()
+        for i, val in zip(indices, legend_vals):
+            fig.add_trace(
+                go.Scatter(
+                    x=x_data,
+                    y=y_data[i, :] if fixed_by == "temperature" else y_data[:, i],
+                    mode="lines",
+                    showlegend=True,
+                    name=legend_fmt(val),
+                    legendgroup=legend_fmt(val),
+                )
+            )
+
+        unit = "atom" if self.number_of_atoms == 1 else f"{self.number_of_atoms} atoms"
+        x_label = "Temperature (K)" if "temperature" in type else f"Volume (Å³/{unit})"
+        y_label = y_label_template.format(unit=unit)
+
+        format_plot(fig, x_label, y_label, width=width, height=height)
+        return fig
+
+
+    def plot_pt(
+        self,
+        type: str,
+        selected_temperatures: np.ndarray = None,
+        ground_state: str = None,
+        width: int = 650,
+        height: int = 600,
+    ):
+        """
+        Generate a plot for the specified thermodynamic quantity.
+
+        Args:
+            type (str): The type of plot to generate (e.g., "helmholtz_energy_pv_vs_volume").
+            selected_temperatures (np.ndarray, optional): Temperatures to highlight in the helmholtz_energy_pv_vs_volume plot.
+            ground_state (str, optional): Name of the ground state configuration for probability plots.
+            width (int, optional): Width of the plot in pixels.
+            height (int, optional): Height of the plot in pixels.
+
+        Returns:
+            plotly.graph_objects.Figure: The generated plotly figure.
+
+        Raises:
+            ValueError: If:
+                - The plot type is invalid.
+                - Required data for the plot (e.g., Helmholtz energies, probabilities, volumes, pressure, etc.) is missing or not calculated.
+        """
+
+        # Central dictionary for plot behavior
+        plot_data = {
+            # Pressure-dependent plots
             "helmholtz_energy_pv_vs_volume": {
                 "x": self.volumes,
                 "y": None,  # Will be handled below
@@ -555,7 +715,7 @@ class System:
                 "x": self.temperatures,
                 "y": self.B0,
                 "fixed": "pressure",
-                "ylabel": "B (GPa/{unit})",
+                "ylabel": "B (GPa)",
             },
             "probability_vs_temperature": {
                 "x": self.temperatures,
@@ -599,15 +759,6 @@ class System:
             indices = self._get_closest_indices(self.temperatures, selected)
             legend_vals = self.temperatures[indices]
             legend_fmt = lambda t: f"{int(t)} K" if t % 1 == 0 else f"{t} K"
-        elif fixed_by == "volume":
-            selected = (
-                selected_volumes
-                if selected_volumes is not None
-                else np.linspace(self.volumes.min(), self.volumes.max(), 10)
-            )
-            indices = self._get_closest_indices(self.volumes, selected)
-            legend_vals = self.volumes[indices]
-            legend_fmt = lambda v: f"{v:.2f} Å³"
         else:
             indices = None
             legend_vals = None
@@ -672,7 +823,7 @@ class System:
                 )
             )
         else:
-            if fixed_by == "temperature" or fixed_by == "volume":
+            if fixed_by == "temperature":
                 for i, val in zip(indices, legend_vals):
                     fig.add_trace(
                         go.Scatter(
