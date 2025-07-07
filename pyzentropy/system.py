@@ -256,7 +256,7 @@ class System:
         # Check that the system bulk moduli are calculated
         if self.bulk_moduli is None:
             raise ValueError("Bulk moduli not calculated. Call calculate_bulk_moduli() first.")
-        self.helmholtz_energies_d2V2 = self.bulk_moduli /EV_PER_CUBIC_ANGSTROM_TO_GPA / self.volumes
+        self.helmholtz_energies_d2V2 = self.bulk_moduli / EV_PER_CUBIC_ANGSTROM_TO_GPA / self.volumes
 
     def calculate_heat_capacities(self) -> None:
         """
@@ -488,7 +488,7 @@ class System:
                 - The plot type is invalid.
                 - Required data for the plot (e.g., Helmholtz energies, probabilities, volumes, pressure, etc.) is missing or not calculated.
         """
-        
+
         # Central dictionary for plot behavior
         plot_data = {
             "helmholtz_energy_vs_volume": {
@@ -679,9 +679,23 @@ class System:
                             x=x_data,
                             y=y_data[i, :] if fixed_by == "temperature" else y_data[:, i],
                             mode="lines",
+                            showlegend=True,
                             name=legend_fmt(val),
+                            legendgroup=legend_fmt(val),
                         )
                     )
+                    if type == "helmholtz_energy_pv_vs_volume" and fixed_by == "temperature":
+                        fig.add_trace(
+                            go.Scatter(
+                                x=[self.V0[i]],
+                                y=[self.G0[i]],
+                                mode="markers",
+                                marker=dict(color="black", size=10, symbol="cross"),
+                                showlegend=False,
+                                name=f"minimum",
+                                legendgroup=legend_fmt(val),
+                            )
+                        )
             elif fixed_by == "pressure" and type != "probability_vs_temperature":
                 fig.add_trace(
                     go.Scatter(
@@ -690,18 +704,6 @@ class System:
                         mode="lines",
                     )
                 )
-
-            if type == "helmholtz_energy_pv_vs_volume" and fixed_by == "temperature":
-                for i, val in zip(indices, legend_vals):
-                    fig.add_trace(
-                        go.Scatter(
-                            x=[self.V0[i]],
-                            y=[self.G0[i]],
-                            mode="markers",
-                            marker=dict(color="black", size=10, symbol="cross"),
-                            showlegend=False,
-                        )
-                    )
             if fixed_by == "pressure" or type == "helmholtz_energy_pv_vs_volume":
                 title_text = f"P = {self.P:.1f} GPa" if self.P is not None else "P = None"
                 fig.update_layout(title=dict(text=title_text, font=dict(size=22, color="rgb(0,0,0)")))

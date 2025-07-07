@@ -41,9 +41,9 @@ class Configuration:
         temperatures: np.ndarray,
         helmholtz_energies: np.ndarray,
         helmholtz_energies_dV: np.ndarray,
-        helmholtz_energies_d2V2: np.ndarray=None,
-        entropies: np.ndarray=None,
-        heat_capacities: np.ndarray=None,
+        helmholtz_energies_d2V2: np.ndarray = None,
+        entropies: np.ndarray = None,
+        heat_capacities: np.ndarray = None,
     ):
         """
         Initialize a Configuration object and check input array shapes.
@@ -71,13 +71,7 @@ class Configuration:
             (heat_capacities, "heat_capacities"),
         ]:
             if arr.shape != expected_shape:
-                raise ValueError(
-                    f"{arr_name} must have shape {expected_shape} (n_temperatures, n_volumes), "
-                    f"where n_temperatures = len(temperatures) = {len(temperatures)} and "
-                    f"n_volumes = len(volumes) = {len(volumes)}. "
-                    f"Received array with shape {arr.shape}. "
-                    "Please ensure your input array matches the expected dimensions."
-                )
+                raise ValueError(f"{arr_name} must have shape {expected_shape} (n_temperatures, n_volumes), " f"where n_temperatures = len(temperatures) = {len(temperatures)} and " f"n_volumes = len(volumes) = {len(volumes)}. " f"Received array with shape {arr.shape}. " "Please ensure your input array matches the expected dimensions.")
 
         self.name = name
         self.multiplicity = multiplicity
