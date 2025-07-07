@@ -256,7 +256,7 @@ class System:
         # Check that the system bulk moduli are calculated
         if self.bulk_moduli is None:
             raise ValueError("Bulk moduli not calculated. Call calculate_bulk_moduli() first.")
-        self.helmholtz_energies_d2V2 = self.bulk_moduli / self.volumes
+        self.helmholtz_energies_d2V2 = self.bulk_moduli /EV_PER_CUBIC_ANGSTROM_TO_GPA / self.volumes
 
     def calculate_heat_capacities(self) -> None:
         """
