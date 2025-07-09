@@ -70,19 +70,9 @@ class System:
             setattr(self, attr, None)
 
         # Calculated properties (P, T)
-        pt_properties = [
-            "P",
-            "V0",
-            "G0",
-            "S0",
-            "Sconf",
-            "B0",
-            "CTE",
-            "LCTE",
-            "Cp",
-        ]
-        for attr in pt_properties:
-            setattr(self, attr, None)
+        # Dictionary to store pressure-temperature dependent properties
+        # Format: {f"{P:.2f}_GPa": {"helmholtz_energy_pv", "V0", "G0", "S0", "Sconf", "B0", "CTE", "LCTE", "Cp"}}
+        self.pt_properties = {}
 
     def calculate_partition_functions(self) -> None:
         """
@@ -139,10 +129,7 @@ class System:
             raise ValueError("Partition functions not calculated. Call calculate_partition_functions() first.")
 
         # Calculate Helmholtz energies
-        self.helmholtz_energies = (
-            -BOLTZMANN_CONSTANT * self.temperatures[:, np.newaxis] * np.log(self.partition_functions)
-            + reference_helmholtz_energies
-        )
+        self.helmholtz_energies = -BOLTZMANN_CONSTANT * self.temperatures[:, np.newaxis] * np.log(self.partition_functions) + reference_helmholtz_energies
 
     def calculate_helmholtz_energies_dV(self) -> None:
         """
@@ -157,9 +144,7 @@ class System:
         # Check that probabilities and dF/dV are calculated for each configuration
         for config in self.configurations.values():
             if config.probabilities is None:
-                raise ValueError(
-                    f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first."
-                )
+                raise ValueError(f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first.")
             if config.helmholtz_energies_dV is None:
                 raise ValueError(f"helmholtz_energies_dV not set for configuration '{config.name}'.")
             self.helmholtz_energies_dV += config.probabilities * config.helmholtz_energies_dV
@@ -188,9 +173,7 @@ class System:
         # Accumulate contributions from each configuration
         for config in self.configurations.values():
             if config.probabilities is None:
-                raise ValueError(
-                    f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first."
-                )
+                raise ValueError(f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first.")
             if config.internal_energies is None:
                 raise ValueError(f"Internal energies not set for configuration '{config.name}'.")
             if config.helmholtz_energies is None:
@@ -224,9 +207,7 @@ class System:
             # Check that the probabilities, dF/dV, and d2F/dV2 are calculated for each configuration
             for config in self.configurations.values():
                 if config.probabilities is None:
-                    raise ValueError(
-                        f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first."
-                    )
+                    raise ValueError(f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first.")
                 if config.helmholtz_energies_dV is None:
                     raise ValueError(f"helmholtz_energies_dV not set for configuration '{config.name}'.")
                 if config.helmholtz_energies_d2V2 is None:
@@ -273,9 +254,7 @@ class System:
         # Accumulate contributions from each configuration
         for config in self.configurations.values():
             if config.probabilities is None:
-                raise ValueError(
-                    f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first."
-                )
+                raise ValueError(f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first.")
             if config.heat_capacities is None:
                 raise ValueError(f"Heat capacities not set for configuration '{config.name}'.")
             if config.internal_energies is None:
@@ -297,15 +276,23 @@ class System:
         Raises:
             ValueError: If required Helmholtz energies or their derivatives are not calculated.
         """
+
         # Check required attributes
         if self.helmholtz_energies is None:
             raise ValueError("Helmholtz energies not calculated. Call calculate_helmholtz_energies() first.")
         if self.helmholtz_energies_dV is None:
-            raise ValueError(
-                "Helmholtz energies derivatives not calculated. Call calculate_helmholtz_energies_dV() first."
-            )
-
-        self.P = P
+            raise ValueError("Helmholtz energies derivatives not calculated. Call calculate_helmholtz_energies_dV() first.")
+        self.pt_properties[f"{P:.2f}_GPa"] = {
+            "helmholtz_energy_pv": None,
+            "V0": None,
+            "G0": None,
+            "S0": None,
+            "Sconf": None,
+            "B0": None,
+            "CTE": None,
+            "LCTE": None,
+            "Cp": None,
+        }
         P = P / EV_PER_CUBIC_ANGSTROM_TO_GPA  # Convert pressure from GPa to eV/Å^3
 
         V0_array = []
@@ -318,11 +305,7 @@ class System:
             volumes = self.volumes
             derivatives = self.helmholtz_energies_dV[i, :]
             helmholtz_energies = self.helmholtz_energies[i, :]
-            configurational_entropies = (
-                self.configurational_entropies[i, :]
-                if self.configurational_entropies is not None
-                else np.full_like(volumes, np.nan)
-            )
+            configurational_entropies = self.configurational_entropies[i, :] if self.configurational_entropies is not None else np.full_like(volumes, np.nan)
             entropies = self.entropies[i, :] if self.entropies is not None else np.full_like(volumes, np.nan)
             bulk_moduli = self.bulk_moduli[i, :] if self.bulk_moduli is not None else np.full_like(volumes, np.nan)
 
@@ -351,16 +334,14 @@ class System:
                 continue
 
             # Interpolators
-            dfdv_interpolator = PchipInterpolator(
-                filtered_helmholtz_volumes, filtered_derivatives + P, extrapolate=True
-            )
+            dfdv_interpolator = PchipInterpolator(filtered_helmholtz_volumes, filtered_derivatives + P, extrapolate=True)
             helmholtz_energy_interpolator = PchipInterpolator(
                 filtered_helmholtz_volumes,
-                filtered_helmholtz_energies + P * filtered_helmholtz_volumes,
+                filtered_helmholtz_energies + P * filtered_helmholtz_volumes,  # F + PV
                 extrapolate=True,
             )
 
-            # Find minimum of F+PV (root of dF/dV+P)
+            # Find minimum of F + PV (root of dF/dV + P)
             try:
                 result = root_scalar(
                     dfdv_interpolator,
@@ -381,9 +362,7 @@ class System:
             # Interpolate entropy at V0
             if len(filtered_entropy_volumes) >= 5:
                 try:
-                    Sconf_interp = PchipInterpolator(
-                        filtered_entropy_volumes, filtered_configurational_entropies, extrapolate=True
-                    )
+                    Sconf_interp = PchipInterpolator(filtered_entropy_volumes, filtered_configurational_entropies, extrapolate=True)
                     S0_interp = PchipInterpolator(filtered_entropy_volumes, filtered_entropies, extrapolate=True)
                     Sconf_array.append(Sconf_interp(min_x))
                     S0_array.append(S0_interp(min_x))
@@ -404,30 +383,32 @@ class System:
             else:
                 B0_array.append(np.nan)
 
-        self.V0 = np.array(V0_array)
-        self.G0 = np.array(G0_array)
-        self.Sconf = np.array(Sconf_array)
-        self.S0 = np.array(S0_array)
-        self.B0 = np.array(B0_array)
+        # Store results in pt_properties
+        self.pt_properties[f"{P:.2f}_GPa"] = {
+            "helmholtz_energy_pv": self.helmholtz_energies + P / EV_PER_CUBIC_ANGSTROM_TO_GPA * self.volumes,
+            "V0": np.array(V0_array),
+            "G0": np.array(G0_array),
+            "S0": np.array(S0_array),
+            "Sconf": np.array(Sconf_array),
+            "B0": np.array(B0_array),
+        }
 
         # Calculate CTE and LCTE
-        dV_dT = np.diff(self.V0) / np.diff(self.temperatures)
-        self.CTE = 1 / self.V0[:-1] * dV_dT * 1e6
-        self.LCTE = self.CTE / 3
+        dV_dT = np.diff(self.pt_properties[f"{P:.2f}_GPa"]["V0"]) / np.diff(self.temperatures)
+        self.pt_properties[f"{P:.2f}_GPa"]["CTE"] = 1 / self.pt_properties[f"{P:.2f}_GPa"]["V0"][:-1] * dV_dT * 1e6
+        self.pt_properties[f"{P:.2f}_GPa"]["LCTE"] = self.pt_properties[f"{P:.2f}_GPa"]["CTE"] / 3
 
         # Calculate heat capacity
-        if np.all(np.isnan(self.S0)):
-            self.Cp = np.full(self._n_temps - 1, np.nan)
+        if np.all(np.isnan(self.pt_properties[f"{P:.2f}_GPa"]["S0"])):
+            self.pt_properties[f"{P:.2f}_GPa"]["Cp"] = np.full(self._n_temps - 1, np.nan)
         else:
-            dS_dT = np.diff(self.S0) / np.diff(self.temperatures)
-            self.Cp = self.temperatures[:-1] * dS_dT
+            dS_dT = np.diff(self.pt_properties[f"{P:.2f}_GPa"]["S0"]) / np.diff(self.temperatures)
+            self.pt_properties[f"{P:.2f}_GPa"]["Cp"] = self.temperatures[:-1] * dS_dT
 
         # Calculate probabilities at P for each configuration
         for config in self.configurations.values():
             if config.probabilities is None:
-                raise ValueError(
-                    f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first."
-                )
+                raise ValueError(f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first.")
             prob_at_V0 = np.full(self._n_temps, np.nan)
             for i in range(self._n_temps):
                 probabilities = config.probabilities[i, :]
@@ -436,14 +417,12 @@ class System:
                 filtered_probabilities = probabilities[valid_probability_indices]
                 if len(filtered_volumes) < 2:
                     continue
-                probabilities_interpolator = PchipInterpolator(
-                    filtered_volumes, filtered_probabilities, extrapolate=True
-                )
+                probabilities_interpolator = PchipInterpolator(filtered_volumes, filtered_probabilities, extrapolate=True)
                 try:
-                    prob_at_V0[i] = probabilities_interpolator(self.V0[i])
+                    prob_at_V0[i] = probabilities_interpolator(self.pt_properties[f"{P:.2f}_GPa"]["V0"][i])
                 except Exception:
                     prob_at_V0[i] = np.nan
-            config.probabilities_at_P = prob_at_V0
+            config.probabilities_at_P[f"{P:.2f}_GPa"] = prob_at_V0
 
     def _get_closest_indices(self, values: np.ndarray, targets: np.ndarray) -> list:
         """
@@ -457,8 +436,7 @@ class System:
             list: List of indices in `values` closest to each target.
         """
         return [np.argmin(np.abs(values - target)) for target in targets]
-    
-    
+
     def plot_vt(
         self,
         type: str,
@@ -591,20 +569,12 @@ class System:
 
         # Select indices and labels for fixed_by
         if fixed_by == "temperature":
-            selected = (
-                selected_temperatures
-                if selected_temperatures is not None
-                else np.linspace(self.temperatures.min(), self.temperatures.max(), 10)
-            )
+            selected = selected_temperatures if selected_temperatures is not None else np.linspace(self.temperatures.min(), self.temperatures.max(), 10)
             indices = self._get_closest_indices(self.temperatures, selected)
             legend_vals = self.temperatures[indices]
             legend_fmt = lambda t: f"{int(t)} K" if t % 1 == 0 else f"{t} K"
         elif fixed_by == "volume":
-            selected = (
-                selected_volumes
-                if selected_volumes is not None
-                else np.linspace(self.volumes.min(), self.volumes.max(), 10)
-            )
+            selected = selected_volumes if selected_volumes is not None else np.linspace(self.volumes.min(), self.volumes.max(), 10)
             indices = self._get_closest_indices(self.volumes, selected)
             legend_vals = self.volumes[indices]
             legend_fmt = lambda v: f"{v:.2f} Å³"
@@ -632,10 +602,10 @@ class System:
         format_plot(fig, x_label, y_label, width=width, height=height)
         return fig
 
-
     def plot_pt(
         self,
         type: str,
+        P: float = 0.00,
         selected_temperatures: np.ndarray = None,
         ground_state: str = None,
         width: int = 650,
@@ -646,6 +616,7 @@ class System:
 
         Args:
             type (str): The type of plot to generate (e.g., "helmholtz_energy_pv_vs_volume").
+            P (float): Pressure in GPa for the plot. Default is 0.00 GPa.
             selected_temperatures (np.ndarray, optional): Temperatures to highlight in the helmholtz_energy_pv_vs_volume plot.
             ground_state (str, optional): Name of the ground state configuration for probability plots.
             width (int, optional): Width of the plot in pixels.
@@ -656,69 +627,73 @@ class System:
 
         Raises:
             ValueError: If:
+                - Properties at P are not calculated.
                 - The plot type is invalid.
                 - Required data for the plot (e.g., Helmholtz energies, probabilities, volumes, pressure, etc.) is missing or not calculated.
         """
+        # Raise ValueError if properties at P are not calculated
+        if f"{P:.2f}_GPa" not in self.pt_properties:
+            raise ValueError(f"Properties at {P:.2f} GPa not calculated. Run calculate_pressure_properties first.")
 
         # Central dictionary for plot behavior
         plot_data = {
             "helmholtz_energy_pv_vs_volume": {
                 "x": self.volumes,
-                "y": None,  # Will be handled below
+                "y": self.pt_properties[f"{P:.2f}_GPa"]["helmholtz_energy_pv"],
                 "fixed": "temperature",
                 "ylabel": "F + PV (eV/{unit})",
             },
             "volume_vs_temperature": {
                 "x": self.temperatures,
-                "y": self.V0,
+                "y": self.pt_properties[f"{P:.2f}_GPa"]["V0"],
                 "fixed": "pressure",
                 "ylabel": "V (Å³/{unit})",
             },
             "CTE_vs_temperature": {
                 "x": self.temperatures[:-1],
-                "y": self.CTE,
+                "y": self.pt_properties[f"{P:.2f}_GPa"]["CTE"],
                 "fixed": "pressure",
                 "ylabel": "CTE (10<sup>-6</sup> K<sup>-1</sup>)",
             },
             "LCTE_vs_temperature": {
                 "x": self.temperatures[:-1],
-                "y": self.LCTE,
+                "y": self.pt_properties[f"{P:.2f}_GPa"]["LCTE"],
                 "fixed": "pressure",
                 "ylabel": "LCTE (10<sup>-6</sup> K<sup>-1</sup>)",
             },
             "entropy_vs_temperature": {
                 "x": self.temperatures,
-                "y": self.S0,
+                "y": self.pt_properties[f"{P:.2f}_GPa"]["S0"],
                 "fixed": "pressure",
                 "ylabel": "S (eV/K/{unit})",
             },
             "configurational_entropy_vs_temperature": {
                 "x": self.temperatures,
-                "y": self.Sconf,
+                "y": self.pt_properties[f"{P:.2f}_GPa"]["Sconf"],
                 "fixed": "pressure",
                 "ylabel": "S<sub>conf</sub> (eV/K/{unit})",
             },
             "heat_capacity_vs_temperature": {
                 "x": self.temperatures[:-1],
-                "y": self.Cp,
+                "y": self.pt_properties[f"{P:.2f}_GPa"]["Cp"],
                 "fixed": "pressure",
                 "ylabel": "C<sub>p</sub> (eV/K/{unit})",
             },
             "gibbs_energy_vs_temperature": {
                 "x": self.temperatures,
-                "y": self.G0,
+                "y": self.pt_properties[f"{P:.2f}_GPa"]["G0"],
                 "fixed": "pressure",
                 "ylabel": "G (eV/{unit})",
             },
             "bulk_modulus_vs_temperature": {
                 "x": self.temperatures,
-                "y": self.B0,
+                "y": self.pt_properties[f"{P:.2f}_GPa"]["B0"],
                 "fixed": "pressure",
                 "ylabel": "B (GPa)",
             },
             "probability_vs_temperature": {
                 "x": self.temperatures,
-                "y": {name: config.probabilities_at_P for name, config in self.configurations.items()},
+                "y": {name: config.probabilities_at_P[f"{P:.2f}_GPa"] for name, config in self.configurations.items()},
                 "fixed": "pressure",
                 "ylabel": "Probability",
             },
@@ -731,16 +706,7 @@ class System:
         x_data = data["x"]
         fixed_by = data["fixed"]
         y_label_template = data["ylabel"]
-
-        # Special handling for F+PV
-        if type == "helmholtz_energy_pv_vs_volume":
-            if self.helmholtz_energies is None or self.P is None or self.volumes is None:
-                raise ValueError(
-                    "Helmholtz energies and/or pressure not set. Run the appropriate calculation method first."
-                )
-            y_data = self.helmholtz_energies + self.P / EV_PER_CUBIC_ANGSTROM_TO_GPA * self.volumes
-        else:
-            y_data = data["y"]
+        y_data = data["y"]
 
         # Check for missing y_data (e.g., not calculated yet)
         if y_data is None:
@@ -750,11 +716,7 @@ class System:
 
         # Select indices and labels for fixed_by
         if fixed_by == "temperature":
-            selected = (
-                selected_temperatures
-                if selected_temperatures is not None
-                else np.linspace(self.temperatures.min(), self.temperatures.max(), 10)
-            )
+            selected = selected_temperatures if selected_temperatures is not None else np.linspace(self.temperatures.min(), self.temperatures.max(), 10)
             indices = self._get_closest_indices(self.temperatures, selected)
             legend_vals = self.temperatures[indices]
             legend_fmt = lambda t: f"{int(t)} K" if t % 1 == 0 else f"{t} K"
@@ -817,7 +779,7 @@ class System:
             y_label = "Probability"
             fig.update_layout(
                 title=dict(
-                    text=f"P = {self.P:.1f} GPa" if self.P is not None else "P = None",
+                    text=f"P = {P:.2f} GPa" if P is not None else "P = None",
                     font=dict(size=22, color="rgb(0,0,0)"),
                 )
             )
@@ -837,8 +799,8 @@ class System:
                     if type == "helmholtz_energy_pv_vs_volume" and fixed_by == "temperature":
                         fig.add_trace(
                             go.Scatter(
-                                x=[self.V0[i]],
-                                y=[self.G0[i]],
+                                x=[self.pt_properties[f"{P:.2f}_GPa"]["V0"][i]],
+                                y=[self.pt_properties[f"{P:.2f}_GPa"]["G0"][i]],
                                 mode="markers",
                                 marker=dict(color="black", size=10, symbol="cross"),
                                 showlegend=False,
@@ -855,7 +817,7 @@ class System:
                     )
                 )
             if fixed_by == "pressure" or type == "helmholtz_energy_pv_vs_volume":
-                title_text = f"P = {self.P:.1f} GPa" if self.P is not None else "P = None"
+                title_text = f"P = {P:.2f} GPa" if P is not None else "P = None"
                 fig.update_layout(title=dict(text=title_text, font=dict(size=22, color="rgb(0,0,0)")))
 
             unit = "atom" if self.number_of_atoms == 1 else f"{self.number_of_atoms} atoms"

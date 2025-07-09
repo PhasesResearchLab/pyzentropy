@@ -71,7 +71,13 @@ class Configuration:
             (heat_capacities, "heat_capacities"),
         ]:
             if arr.shape != expected_shape:
-                raise ValueError(f"{arr_name} must have shape {expected_shape} (n_temperatures, n_volumes), " f"where n_temperatures = len(temperatures) = {len(temperatures)} and " f"n_volumes = len(volumes) = {len(volumes)}. " f"Received array with shape {arr.shape}. " "Please ensure your input array matches the expected dimensions.")
+                raise ValueError(
+                    f"{arr_name} must have shape {expected_shape} (n_temperatures, n_volumes), "
+                    f"where n_temperatures = len(temperatures) = {len(temperatures)} and "
+                    f"n_volumes = len(volumes) = {len(volumes)}. "
+                    f"Received array with shape {arr.shape}. "
+                    "Please ensure your input array matches the expected dimensions."
+                )
 
         self.name = name
         self.multiplicity = multiplicity
@@ -86,7 +92,7 @@ class Configuration:
         self.internal_energies = None
         self.partition_functions = None
         self.probabilities = None
-        self.probabilities_at_P = None
+        self.probabilities_at_P = {}
 
     def calculate_internal_energies(self) -> None:
         """

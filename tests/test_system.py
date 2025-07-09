@@ -249,43 +249,47 @@ def test_calculate_pressure_properties():
     system = make_system(local_config_data, reference_helmholtz_energies)
     system.calculate_pressure_properties(P=0)
     # Test values against expected results
-    assert np.allclose(system.V0, expected_results.V0, equal_nan=True)
-    assert np.allclose(system.G0, expected_results.G0, equal_nan=True)
-    assert np.allclose(system.Sconf, expected_results.Sconf, equal_nan=True)
-    assert np.allclose(system.S0, expected_results.S0, equal_nan=True)
-    assert np.allclose(system.B0, expected_results.B0, equal_nan=True)
-    assert np.allclose(system.CTE, expected_results.CTE, equal_nan=True)
-    assert np.allclose(system.LCTE, expected_results.LCTE, equal_nan=True)
-    assert np.allclose(system.Cp, expected_results.Cp, equal_nan=True)
+    assert np.allclose(system.pt_properties["0.00_GPa"]["V0"], expected_results.pt_properties["0.00_GPa"]["V0"], equal_nan=True)
+    assert np.allclose(system.pt_properties["0.00_GPa"]["G0"], expected_results.pt_properties["0.00_GPa"]["G0"], equal_nan=True)
+    assert np.allclose(system.pt_properties["0.00_GPa"]["Sconf"], expected_results.pt_properties["0.00_GPa"]["Sconf"], equal_nan=True)
+    assert np.allclose(system.pt_properties["0.00_GPa"]["S0"], expected_results.pt_properties["0.00_GPa"]["S0"], equal_nan=True)
+    assert np.allclose(system.pt_properties["0.00_GPa"]["B0"], expected_results.pt_properties["0.00_GPa"]["B0"], equal_nan=True)
+    assert np.allclose(system.pt_properties["0.00_GPa"]["CTE"], expected_results.pt_properties["0.00_GPa"]["CTE"], equal_nan=True)
+    assert np.allclose(system.pt_properties["0.00_GPa"]["LCTE"], expected_results.pt_properties["0.00_GPa"]["LCTE"], equal_nan=True)
+    assert np.allclose(system.pt_properties["0.00_GPa"]["Cp"], expected_results.pt_properties["0.00_GPa"]["Cp"], equal_nan=True)
     for config in system.configurations.values():
-        assert np.allclose(config.probabilities_at_P, expected_results.configurations[config.name].probabilities_at_P, equal_nan=True)
+        assert np.allclose(config.probabilities_at_P["0.00_GPa"], expected_results.configurations[config.name].probabilities_at_P["0.00_GPa"], equal_nan=True)
 
     # Test with all entropies set to None
     system2 = make_system(local_config_data, reference_helmholtz_energies)
     system2.configurational_entropies = None
     system2.entropies = None
     system2.calculate_pressure_properties(P=0)
-    assert np.allclose(system2.V0, expected_results.V0, equal_nan=True)
-    assert np.allclose(system2.G0, expected_results.G0, equal_nan=True)
-    assert np.all(np.isnan(system2.Sconf))
-    assert np.all(np.isnan(system2.S0))
-    assert np.allclose(system.B0, expected_results.B0, equal_nan=True)
-    assert np.allclose(system.CTE, expected_results.CTE, equal_nan=True)
-    assert np.allclose(system.LCTE, expected_results.LCTE, equal_nan=True)
-    assert np.all(np.isnan(system2.Cp))
+    assert np.allclose(system2.pt_properties["0.00_GPa"]["V0"], expected_results.pt_properties["0.00_GPa"]["V0"], equal_nan=True)
+    assert np.allclose(system2.pt_properties["0.00_GPa"]["G0"], expected_results.pt_properties["0.00_GPa"]["G0"], equal_nan=True)
+    assert np.all(np.isnan(system2.pt_properties["0.00_GPa"]["Sconf"]))
+    assert np.all(np.isnan(system2.pt_properties["0.00_GPa"]["S0"]))
+    assert np.allclose(system2.pt_properties["0.00_GPa"]["B0"], expected_results.pt_properties["0.00_GPa"]["B0"], equal_nan=True)
+    assert np.allclose(system2.pt_properties["0.00_GPa"]["CTE"], expected_results.pt_properties["0.00_GPa"]["CTE"], equal_nan=True)
+    assert np.allclose(system2.pt_properties["0.00_GPa"]["LCTE"], expected_results.pt_properties["0.00_GPa"]["LCTE"], equal_nan=True)
+    assert np.all(np.isnan(system2.pt_properties["0.00_GPa"]["Cp"]))
+    for config in system2.configurations.values():
+        assert np.allclose(config.probabilities_at_P["0.00_GPa"], expected_results.configurations[config.name].probabilities_at_P["0.00_GPa"], equal_nan=True)
 
     # Test with bulk_moduli set to None
     system3 = make_system(local_config_data, reference_helmholtz_energies)
     system3.bulk_moduli = None
     system3.calculate_pressure_properties(P=0)
-    assert np.allclose(system3.V0, expected_results.V0, equal_nan=True)
-    assert np.allclose(system3.G0, expected_results.G0, equal_nan=True)
-    assert np.allclose(system3.Sconf, expected_results.Sconf, equal_nan=True)
-    assert np.allclose(system3.S0, expected_results.S0, equal_nan=True)
-    assert np.all(np.isnan(system3.B0))
-    assert np.allclose(system3.CTE, expected_results.CTE, equal_nan=True)
-    assert np.allclose(system3.LCTE, expected_results.LCTE, equal_nan=True)
-    assert np.allclose(system3.Cp, expected_results.Cp, equal_nan=True)
+    assert np.allclose(system3.pt_properties["0.00_GPa"]["V0"], expected_results.pt_properties["0.00_GPa"]["V0"], equal_nan=True)
+    assert np.allclose(system3.pt_properties["0.00_GPa"]["G0"], expected_results.pt_properties["0.00_GPa"]["G0"], equal_nan=True)
+    assert np.allclose(system3.pt_properties["0.00_GPa"]["Sconf"], expected_results.pt_properties["0.00_GPa"]["Sconf"], equal_nan=True)
+    assert np.allclose(system3.pt_properties["0.00_GPa"]["S0"], expected_results.pt_properties["0.00_GPa"]["S0"], equal_nan=True)
+    assert np.all(np.isnan(system3.pt_properties["0.00_GPa"]["B0"]))
+    assert np.allclose(system3.pt_properties["0.00_GPa"]["CTE"], expected_results.pt_properties["0.00_GPa"]["CTE"], equal_nan=True)
+    assert np.allclose(system3.pt_properties["0.00_GPa"]["LCTE"], expected_results.pt_properties["0.00_GPa"]["LCTE"], equal_nan=True)
+    assert np.allclose(system3.pt_properties["0.00_GPa"]["Cp"], expected_results.pt_properties["0.00_GPa"]["Cp"], equal_nan=True)
+    for config in system3.configurations.values():
+        assert np.allclose(config.probabilities_at_P["0.00_GPa"], expected_results.configurations[config.name].probabilities_at_P["0.00_GPa"], equal_nan=True)
 
     # Test with helmholtz_energies set to None
     system4 = make_system(local_config_data, reference_helmholtz_energies)
@@ -427,10 +431,19 @@ def test_plot_pt_smoke(plot_type):
     system.plot_pt(plot_type)
 
 
+def test_plot_pt_properties_at_P_missing():
+    """Test that plot_pt raises ValueError if pressure properties are not calculated."""
+    local_config_data = copy.deepcopy(config_data)
+    system = make_system(local_config_data, reference_helmholtz_energies)
+    with pytest.raises(ValueError, match="Properties at 0.00 GPa not calculated. Run calculate_pressure_properties() first."):
+        system.plot_pt("helmholtz_energy_pv_vs_volume")
+
+
 def test_plot_pt_invalid_type():
     """Test that an invalid plot type raises ValueError."""
     local_config_data = copy.deepcopy(config_data)
     system = make_system(local_config_data, reference_helmholtz_energies)
+    system.calculate_pressure_properties(P=0)
     with pytest.raises(ValueError, match="Invalid plot type"):
         system.plot_pt("not_a_real_plot_type")
 
