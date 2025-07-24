@@ -129,7 +129,10 @@ class System:
             raise ValueError("Partition functions not calculated. Call calculate_partition_functions() first.")
 
         # Calculate Helmholtz energies
-        self.helmholtz_energies = -BOLTZMANN_CONSTANT * self.temperatures[:, np.newaxis] * np.log(self.partition_functions) + reference_helmholtz_energies
+        self.helmholtz_energies = (
+            -BOLTZMANN_CONSTANT * self.temperatures[:, np.newaxis] * np.log(self.partition_functions)
+            + reference_helmholtz_energies
+        )
 
     def calculate_helmholtz_energies_dV(self) -> None:
         """
@@ -144,7 +147,9 @@ class System:
         # Check that probabilities and dF/dV are calculated for each configuration
         for config in self.configurations.values():
             if config.probabilities is None:
-                raise ValueError(f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first.")
+                raise ValueError(
+                    f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first."
+                )
             if config.helmholtz_energies_dV is None:
                 raise ValueError(f"helmholtz_energies_dV not set for configuration '{config.name}'.")
             self.helmholtz_energies_dV += config.probabilities * config.helmholtz_energies_dV
@@ -173,7 +178,9 @@ class System:
         # Accumulate contributions from each configuration
         for config in self.configurations.values():
             if config.probabilities is None:
-                raise ValueError(f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first.")
+                raise ValueError(
+                    f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first."
+                )
             if config.internal_energies is None:
                 raise ValueError(f"Internal energies not set for configuration '{config.name}'.")
             if config.helmholtz_energies is None:
@@ -207,7 +214,9 @@ class System:
             # Check that the probabilities, dF/dV, and d2F/dV2 are calculated for each configuration
             for config in self.configurations.values():
                 if config.probabilities is None:
-                    raise ValueError(f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first.")
+                    raise ValueError(
+                        f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first."
+                    )
                 if config.helmholtz_energies_dV is None:
                     raise ValueError(f"helmholtz_energies_dV not set for configuration '{config.name}'.")
                 if config.helmholtz_energies_d2V2 is None:
@@ -254,7 +263,9 @@ class System:
         # Accumulate contributions from each configuration
         for config in self.configurations.values():
             if config.probabilities is None:
-                raise ValueError(f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first.")
+                raise ValueError(
+                    f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first."
+                )
             if config.heat_capacities is None:
                 raise ValueError(f"Heat capacities not set for configuration '{config.name}'.")
             if config.internal_energies is None:
@@ -281,7 +292,9 @@ class System:
         if self.helmholtz_energies is None:
             raise ValueError("Helmholtz energies not calculated. Call calculate_helmholtz_energies() first.")
         if self.helmholtz_energies_dV is None:
-            raise ValueError("Helmholtz energies derivatives not calculated. Call calculate_helmholtz_energies_dV() first.")
+            raise ValueError(
+                "Helmholtz energies derivatives not calculated. Call calculate_helmholtz_energies_dV() first."
+            )
         self.pt_properties[f"{P:.2f}_GPa"] = {
             "helmholtz_energy_pv": None,
             "V0": None,
@@ -293,7 +306,7 @@ class System:
             "LCTE": None,
             "Cp": None,
         }
-        P = P / EV_PER_CUBIC_ANGSTROM_TO_GPA  # Convert pressure from GPa to eV/Å^3
+        P_eV_per_A3 = P / EV_PER_CUBIC_ANGSTROM_TO_GPA  # Convert pressure from GPa to eV/Å^3
 
         V0_array = []
         G0_array = []
@@ -305,7 +318,11 @@ class System:
             volumes = self.volumes
             derivatives = self.helmholtz_energies_dV[i, :]
             helmholtz_energies = self.helmholtz_energies[i, :]
-            configurational_entropies = self.configurational_entropies[i, :] if self.configurational_entropies is not None else np.full_like(volumes, np.nan)
+            configurational_entropies = (
+                self.configurational_entropies[i, :]
+                if self.configurational_entropies is not None
+                else np.full_like(volumes, np.nan)
+            )
             entropies = self.entropies[i, :] if self.entropies is not None else np.full_like(volumes, np.nan)
             bulk_moduli = self.bulk_moduli[i, :] if self.bulk_moduli is not None else np.full_like(volumes, np.nan)
 
@@ -334,10 +351,12 @@ class System:
                 continue
 
             # Interpolators
-            dfdv_interpolator = PchipInterpolator(filtered_helmholtz_volumes, filtered_derivatives + P, extrapolate=True)
+            dfdv_interpolator = PchipInterpolator(
+                filtered_helmholtz_volumes, filtered_derivatives + P_eV_per_A3, extrapolate=True
+            )
             helmholtz_energy_interpolator = PchipInterpolator(
                 filtered_helmholtz_volumes,
-                filtered_helmholtz_energies + P * filtered_helmholtz_volumes,  # F + PV
+                filtered_helmholtz_energies + P_eV_per_A3 * filtered_helmholtz_volumes,  # F + PV
                 extrapolate=True,
             )
 
@@ -362,7 +381,9 @@ class System:
             # Interpolate entropy at V0
             if len(filtered_entropy_volumes) >= 5:
                 try:
-                    Sconf_interp = PchipInterpolator(filtered_entropy_volumes, filtered_configurational_entropies, extrapolate=True)
+                    Sconf_interp = PchipInterpolator(
+                        filtered_entropy_volumes, filtered_configurational_entropies, extrapolate=True
+                    )
                     S0_interp = PchipInterpolator(filtered_entropy_volumes, filtered_entropies, extrapolate=True)
                     Sconf_array.append(Sconf_interp(min_x))
                     S0_array.append(S0_interp(min_x))
@@ -385,7 +406,7 @@ class System:
 
         # Store results in pt_properties
         self.pt_properties[f"{P:.2f}_GPa"] = {
-            "helmholtz_energy_pv": self.helmholtz_energies + P / EV_PER_CUBIC_ANGSTROM_TO_GPA * self.volumes,
+            "helmholtz_energy_pv": self.helmholtz_energies + P_eV_per_A3 * self.volumes,
             "V0": np.array(V0_array),
             "G0": np.array(G0_array),
             "S0": np.array(S0_array),
@@ -408,7 +429,9 @@ class System:
         # Calculate probabilities at P for each configuration
         for config in self.configurations.values():
             if config.probabilities is None:
-                raise ValueError(f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first.")
+                raise ValueError(
+                    f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first."
+                )
             prob_at_V0 = np.full(self._n_temps, np.nan)
             for i in range(self._n_temps):
                 probabilities = config.probabilities[i, :]
@@ -417,7 +440,9 @@ class System:
                 filtered_probabilities = probabilities[valid_probability_indices]
                 if len(filtered_volumes) < 2:
                     continue
-                probabilities_interpolator = PchipInterpolator(filtered_volumes, filtered_probabilities, extrapolate=True)
+                probabilities_interpolator = PchipInterpolator(
+                    filtered_volumes, filtered_probabilities, extrapolate=True
+                )
                 try:
                     prob_at_V0[i] = probabilities_interpolator(self.pt_properties[f"{P:.2f}_GPa"]["V0"][i])
                 except Exception:
@@ -569,12 +594,20 @@ class System:
 
         # Select indices and labels for fixed_by
         if fixed_by == "temperature":
-            selected = selected_temperatures if selected_temperatures is not None else np.linspace(self.temperatures.min(), self.temperatures.max(), 10)
+            selected = (
+                selected_temperatures
+                if selected_temperatures is not None
+                else np.linspace(self.temperatures.min(), self.temperatures.max(), 10)
+            )
             indices = self._get_closest_indices(self.temperatures, selected)
             legend_vals = self.temperatures[indices]
             legend_fmt = lambda t: f"{int(t)} K" if t % 1 == 0 else f"{t} K"
         elif fixed_by == "volume":
-            selected = selected_volumes if selected_volumes is not None else np.linspace(self.volumes.min(), self.volumes.max(), 10)
+            selected = (
+                selected_volumes
+                if selected_volumes is not None
+                else np.linspace(self.volumes.min(), self.volumes.max(), 10)
+            )
             indices = self._get_closest_indices(self.volumes, selected)
             legend_vals = self.volumes[indices]
             legend_fmt = lambda v: f"{v:.2f} Å³"
@@ -716,7 +749,11 @@ class System:
 
         # Select indices and labels for fixed_by
         if fixed_by == "temperature":
-            selected = selected_temperatures if selected_temperatures is not None else np.linspace(self.temperatures.min(), self.temperatures.max(), 10)
+            selected = (
+                selected_temperatures
+                if selected_temperatures is not None
+                else np.linspace(self.temperatures.min(), self.temperatures.max(), 10)
+            )
             indices = self._get_closest_indices(self.temperatures, selected)
             legend_vals = self.temperatures[indices]
             legend_fmt = lambda t: f"{int(t)} K" if t % 1 == 0 else f"{t} K"
@@ -738,6 +775,31 @@ class System:
                         name=ground_state,
                     )
                 )
+                gs_probs = np.array(y_data[ground_state])
+                # Interpolate to find temperature where probability crosses 0.5
+                try:
+                    interp = PchipInterpolator(x_data, gs_probs)
+                    roots = []
+                    for i in range(len(x_data) - 1):
+                        # Check if the probability crosses 0.5 between x_data[i] and x_data[i+1]
+                        if (gs_probs[i] - 0.5) * (gs_probs[i + 1] - 0.5) < 0:
+                            res = root_scalar(
+                                lambda T: interp(T) - 0.5,
+                                bracket=(x_data[i], x_data[i + 1]),
+                                method="brentq",
+                                xtol=1e-10,
+                                rtol=1e-12,
+                            )
+                            if res.converged:
+                                roots.append(res.root)
+                    if roots:
+                        temp_50 = roots[0]  # Take the first crossing
+                        fig.add_vline(
+                            x=temp_50,
+                            line=dict(color="black", dash="dash"),
+                        )
+                except Exception:
+                    pass  # Do not plot the vertical line if interpolation/root finding fails
                 # Sum all probabilities except the ground state
                 excited_probs = np.zeros_like(x_data, dtype=float)
                 for name, probs in y_data.items():
@@ -749,7 +811,7 @@ class System:
                         y=excited_probs,
                         mode="lines",
                         name="Sum (Non-GS)",
-                        line=dict(dash="dash", color="black"),
+                        line=dict(color="black"),
                     )
                 )
                 # Add the rest (non-ground states)
@@ -775,13 +837,15 @@ class System:
                     )
             for trace in traces:
                 fig.add_trace(trace)
+
             x_label = "Temperature (K)"
             y_label = "Probability"
             fig.update_layout(
                 title=dict(
                     text=f"P = {P:.2f} GPa" if P is not None else "P = None",
                     font=dict(size=22, color="rgb(0,0,0)"),
-                )
+                ),
+                yaxis=dict(range=[0, None]),
             )
         else:
             if fixed_by == "temperature":
