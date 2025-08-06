@@ -1,4 +1,5 @@
 # Third-Party Library Imports
+from build.lib.pyzentropy import system
 import numpy as np
 import plotly.graph_objects as go
 import scipy.constants
@@ -73,6 +74,10 @@ class System:
         # Dictionary to store pressure-temperature dependent properties
         # Format: {f"{P:.2f}_GPa": {"helmholtz_energy_pv", "V0", "G0", "S0", "Sconf", "B0", "CTE", "LCTE", "Cp"}}
         self.pt_properties = {}
+
+        # Initialize pressure-temperature and volume-temperature diagrams
+        self.pt_diagram = {}
+        self.vt_diagram = {}
 
     def calculate_partition_functions(self) -> None:
         """
@@ -448,6 +453,152 @@ class System:
                 except Exception:
                     prob_at_V0[i] = np.nan
             config.probabilities_at_P[f"{P:.2f}_GPa"] = prob_at_V0
+
+    # TODO: For tests:
+    # Have to set F, dF/dV, and d^2F/dV^2 first before calling calculate_pressure_properties
+    def calculate_phase_diagrams(
+        self, ground_state: str, dP: float = 0.2, volume_step_size: float = 1e-4, atol: float = 1e-6
+    ) -> None:
+        """
+        Calculate pressure-temperature and volume-temperature phase diagrams for the system.
+
+        Args:
+            ground_state (str): Name of the ground state configuration.
+            dP (float): Pressure increment in GPa. Default is 0.2 GPa.
+            volume_step_size (float): Step size for volume when searching for the miscibility gap. Default is 1e-4.
+            atol (float): Absolute tolerance for convergence in the common tangent search. Default is 1e-6.
+        """
+
+        # Initialize phase diagram containers
+        self.pt_diagram = {
+            "second_order": {"P": np.array([]), "T": np.array([])},
+        }
+        self.vt_diagram = {
+            "first_order": {"V_left": np.array([]), "V_right": np.array([]), "T": np.array([])},
+            "second_order": {"V": np.array([]), "T": np.array([])},
+        }
+
+        # Find second order phase transition points (where ground state probability crosses 50%)
+        P = 0.0
+        while True:
+            try:
+                self.calculate_pressure_properties(P)
+                gs_probabilities = self.configurations[ground_state].probabilities_at_P[f"{P:.2f}_GPa"]
+                V0 = self.pt_properties[f"{P:.2f}_GPa"]["V0"]
+
+                # Create interpolators for smooth curves
+                interp_probabilities = PchipInterpolator(self.temperatures, gs_probabilities)
+                interp_V0 = PchipInterpolator(self.temperatures, V0)
+
+                # Find where probability crosses 50% (phase transition)
+                roots = []
+                for i in range(len(self.temperatures) - 1):
+                    # Check if probability crosses 0.5 between consecutive points
+                    if (gs_probabilities[i] - 0.5) * (
+                        gs_probabilities[i + 1] - 0.5
+                    ) < 0:  # True if there is a change of sign
+                        res = root_scalar(
+                            lambda T: interp_probabilities(T) - 0.5,
+                            bracket=(self.temperatures[i], self.temperatures[i + 1]),
+                            method="brentq",
+                            xtol=1e-10,
+                            rtol=1e-12,
+                        )
+                        if res.converged:
+                            roots.append(res.root)
+
+                # Record transition point in phase diagrams
+                if roots:
+                    temp_50 = roots[0]  # Take first crossing
+                    V0_at_T50 = interp_V0(temp_50)
+                    self.pt_diagram["second_order"]["P"] = np.append(self.pt_diagram["second_order"]["P"], P)
+                    self.pt_diagram["second_order"]["T"] = np.append(self.pt_diagram["second_order"]["T"], temp_50)
+                    self.vt_diagram["second_order"]["V"] = np.append(self.vt_diagram["second_order"]["V"], V0_at_T50)
+                    self.vt_diagram["second_order"]["T"] = np.append(self.vt_diagram["second_order"]["T"], temp_50)
+
+                P += dP
+
+            except Exception:
+                # If we hit an error (e.g., no crossing found), we stop the loop
+                break
+
+        # Find first order phase transition points (miscibility gap) using the common tangent method
+        for index, temperature in enumerate(self.temperatures):
+            V0 = self.pt_properties[f"{0.0:.2f}_GPa"]["V0"][
+                index
+            ]  # Only consider 0 GPa for miscibility gap for T-V diagram
+            min_V0 = 0.9 * V0  # Set a threshold for minimum V0
+            max_V0 = 1.1 * V0  # Set a threshold for maximum V0
+
+            # Find roots where d^2F/dV^2 = 0 between min_V0 and max_V0
+            filtered_indices = np.where((self.volumes >= min_V0) & (self.volumes <= max_V0))[0]
+            filtered_volumes = self.volumes[filtered_indices]
+            filtered_helmholtz_energies_dV = self.helmholtz_energies_dV[index, filtered_indices]
+            filtered_helmholtz_energies_d2V2 = self.helmholtz_energies_d2V2[index, filtered_indices]
+
+            # Interpolators for dF/dV and d^2F/dV^2
+            d2V2_interpolator = PchipInterpolator(filtered_volumes, filtered_helmholtz_energies_d2V2)
+            dV_interpolator = PchipInterpolator(filtered_volumes, filtered_helmholtz_energies_dV)
+
+            # Find sign changes in d^2F/dV^2 (roots)
+            roots = []
+            for i in range(len(filtered_volumes) - 1):
+                if (
+                    filtered_helmholtz_energies_d2V2[i] * filtered_helmholtz_energies_d2V2[i + 1]
+                ) < 0:  # True if there is a change of sign
+                    res = root_scalar(
+                        d2V2_interpolator,
+                        bracket=(filtered_volumes[i], filtered_volumes[i + 1]),
+                        method="brentq",
+                        xtol=1e-10,
+                        rtol=1e-12,
+                    )
+                    if res.converged:
+                        roots.append(res.root)
+
+            # Move left from the first root and right from the second root until dF/dV values are approximately equal (miscibility gap volumes)
+            if roots:
+                left_root = roots[0]
+                right_root = roots[-1]
+
+                left_volume = left_root - volume_step_size
+                right_volume = right_root + volume_step_size
+                left_helmholtz_energy_dV = dV_interpolator(left_volume)
+                right_helmholtz_energy_dV = dV_interpolator(right_volume)
+
+                while ~np.isclose(left_helmholtz_energy_dV, right_helmholtz_energy_dV, atol=atol):
+                    left_volume -= volume_step_size
+                    right_volume += volume_step_size
+                    left_helmholtz_energy_dV = dV_interpolator(left_volume)
+                    right_helmholtz_energy_dV = dV_interpolator(right_volume)
+
+                self.vt_diagram["first_order"]["V_left"] = np.append(
+                    self.vt_diagram["first_order"]["V_left"], left_volume
+                )
+                self.vt_diagram["first_order"]["V_right"] = np.append(
+                    self.vt_diagram["first_order"]["V_right"], right_volume
+                )
+                self.vt_diagram["first_order"]["T"] = np.append(self.vt_diagram["first_order"]["T"], temperature)
+
+        # Remove second order points that fall within the miscibility gap region
+        max_T_first_order = np.max(self.vt_diagram["first_order"]["T"])
+        mask = self.vt_diagram["second_order"]["T"] > max_T_first_order
+        self.vt_diagram["second_order"]["V"] = self.vt_diagram["second_order"]["V"][mask]
+        self.vt_diagram["second_order"]["T"] = self.vt_diagram["second_order"]["T"][mask]
+        self.pt_diagram["second_order"]["T"] = np.where(mask, self.pt_diagram["second_order"]["T"], np.nan)
+
+        # Add the last second order point to the end of first order arrays for continuity in the diagram
+        self.vt_diagram["first_order"]["V_left"] = np.append(
+            self.vt_diagram["first_order"]["V_left"], self.vt_diagram["second_order"]["V"][-1]
+        )
+        self.vt_diagram["first_order"]["V_right"] = np.append(
+            self.vt_diagram["first_order"]["V_right"], self.vt_diagram["second_order"]["V"][-1]
+        )
+        self.vt_diagram["first_order"]["T"] = np.append(
+            self.vt_diagram["first_order"]["T"], self.vt_diagram["second_order"]["T"][-1]
+        )
+
+        return None
 
     def _get_closest_indices(self, values: np.ndarray, targets: np.ndarray) -> list:
         """
