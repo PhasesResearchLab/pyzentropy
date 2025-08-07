@@ -75,8 +75,8 @@ class System:
         self.pt_properties = {}
 
         # Initialize pressure-temperature and volume-temperature diagrams
-        self.pt_diagram = {}
-        self.vt_diagram = {}
+        self.pt_phase_diagram = {}
+        self.tv_phase_diagram = {}
 
     def calculate_partition_functions(self) -> None:
         """
@@ -469,10 +469,10 @@ class System:
         """
 
         # Initialize phase diagram containers
-        self.pt_diagram = {
+        self.pt_phase_diagram = {
             "second_order": {"P": np.array([]), "T": np.array([])},
         }
-        self.vt_diagram = {
+        self.tv_phase_diagram = {
             "first_order": {"V_left": np.array([]), "V_right": np.array([]), "T": np.array([])},
             "second_order": {"V": np.array([]), "T": np.array([])},
         }
@@ -510,10 +510,10 @@ class System:
                 if roots:
                     temp_50 = roots[0]  # Take first crossing
                     V0_at_T50 = interp_V0(temp_50)
-                    self.pt_diagram["second_order"]["P"] = np.append(self.pt_diagram["second_order"]["P"], P)
-                    self.pt_diagram["second_order"]["T"] = np.append(self.pt_diagram["second_order"]["T"], temp_50)
-                    self.vt_diagram["second_order"]["V"] = np.append(self.vt_diagram["second_order"]["V"], V0_at_T50)
-                    self.vt_diagram["second_order"]["T"] = np.append(self.vt_diagram["second_order"]["T"], temp_50)
+                    self.pt_phase_diagram["second_order"]["P"] = np.append(self.pt_phase_diagram["second_order"]["P"], P)
+                    self.pt_phase_diagram["second_order"]["T"] = np.append(self.pt_phase_diagram["second_order"]["T"], temp_50)
+                    self.tv_phase_diagram["second_order"]["V"] = np.append(self.tv_phase_diagram["second_order"]["V"], V0_at_T50)
+                    self.tv_phase_diagram["second_order"]["T"] = np.append(self.tv_phase_diagram["second_order"]["T"], temp_50)
 
                 P += dP
 
@@ -571,30 +571,30 @@ class System:
                     left_helmholtz_energy_dV = dV_interpolator(left_volume)
                     right_helmholtz_energy_dV = dV_interpolator(right_volume)
 
-                self.vt_diagram["first_order"]["V_left"] = np.append(
-                    self.vt_diagram["first_order"]["V_left"], left_volume
+                self.tv_phase_diagram["first_order"]["V_left"] = np.append(
+                    self.tv_phase_diagram["first_order"]["V_left"], left_volume
                 )
-                self.vt_diagram["first_order"]["V_right"] = np.append(
-                    self.vt_diagram["first_order"]["V_right"], right_volume
+                self.tv_phase_diagram["first_order"]["V_right"] = np.append(
+                    self.tv_phase_diagram["first_order"]["V_right"], right_volume
                 )
-                self.vt_diagram["first_order"]["T"] = np.append(self.vt_diagram["first_order"]["T"], temperature)
+                self.tv_phase_diagram["first_order"]["T"] = np.append(self.tv_phase_diagram["first_order"]["T"], temperature)
 
         # Remove second order points that fall within the miscibility gap region
-        max_T_first_order = np.max(self.vt_diagram["first_order"]["T"])
-        mask = self.vt_diagram["second_order"]["T"] > max_T_first_order
-        self.vt_diagram["second_order"]["V"] = self.vt_diagram["second_order"]["V"][mask]
-        self.vt_diagram["second_order"]["T"] = self.vt_diagram["second_order"]["T"][mask]
-        self.pt_diagram["second_order"]["T"] = np.where(mask, self.pt_diagram["second_order"]["T"], np.nan)
+        max_T_first_order = np.max(self.tv_phase_diagram["first_order"]["T"])
+        mask = self.tv_phase_diagram["second_order"]["T"] > max_T_first_order
+        self.tv_phase_diagram["second_order"]["V"] = self.tv_phase_diagram["second_order"]["V"][mask]
+        self.tv_phase_diagram["second_order"]["T"] = self.tv_phase_diagram["second_order"]["T"][mask]
+        self.pt_phase_diagram["second_order"]["T"] = np.where(mask, self.pt_phase_diagram["second_order"]["T"], np.nan)
 
         # Add the last second order point to the end of first order arrays for continuity in the diagram
-        self.vt_diagram["first_order"]["V_left"] = np.append(
-            self.vt_diagram["first_order"]["V_left"], self.vt_diagram["second_order"]["V"][-1]
+        self.tv_phase_diagram["first_order"]["V_left"] = np.append(
+            self.tv_phase_diagram["first_order"]["V_left"], self.tv_phase_diagram["second_order"]["V"][-1]
         )
-        self.vt_diagram["first_order"]["V_right"] = np.append(
-            self.vt_diagram["first_order"]["V_right"], self.vt_diagram["second_order"]["V"][-1]
+        self.tv_phase_diagram["first_order"]["V_right"] = np.append(
+            self.tv_phase_diagram["first_order"]["V_right"], self.tv_phase_diagram["second_order"]["V"][-1]
         )
-        self.vt_diagram["first_order"]["T"] = np.append(
-            self.vt_diagram["first_order"]["T"], self.vt_diagram["second_order"]["T"][-1]
+        self.tv_phase_diagram["first_order"]["T"] = np.append(
+            self.tv_phase_diagram["first_order"]["T"], self.tv_phase_diagram["second_order"]["T"][-1]
         )
 
         return None
@@ -612,6 +612,7 @@ class System:
         """
         return [np.argmin(np.abs(values - target)) for target in targets]
 
+    # TODO: write tests for vt diagram
     def plot_vt(
         self,
         type: str,
@@ -725,6 +726,20 @@ class System:
                 "fixed": "volume",
                 "ylabel": "B (GPa)",
             },
+            # TODO: write tests for this
+            "tv_phase_diagram": {
+                "x": {
+                    "V_left_first_order": self.tv_phase_diagram["first_order"]["V_left"],
+                    "V_right_first_order": self.tv_phase_diagram["first_order"]["V_right"],
+                    "V_second_order": self.tv_phase_diagram["second_order"]["V"],
+                } if len(self.tv_phase_diagram) > 0 else None,
+                "y": {
+                    'T_first_order': self.tv_phase_diagram['first_order']['T'],
+                    'T_second_order': self.tv_phase_diagram['second_order']['T'],
+                } if len(self.tv_phase_diagram) > 0 else None,
+                "fixed": None,
+                "ylabel": "Temperature (K)",
+            },
         }
 
         if type not in plot_data:
@@ -738,8 +753,6 @@ class System:
 
         # Check for missing y_data (e.g., not calculated yet)
         if y_data is None:
-            raise ValueError(f"{type} data not calculated. Run the appropriate calculation method first.")
-        elif isinstance(y_data, dict) and all(v is None for v in y_data.values()):
             raise ValueError(f"{type} data not calculated. Run the appropriate calculation method first.")
 
         # Select indices and labels for fixed_by
@@ -761,30 +774,52 @@ class System:
             indices = self._get_closest_indices(self.volumes, selected)
             legend_vals = self.volumes[indices]
             legend_fmt = lambda v: f"{v:.2f} Å³"
-        else:
-            indices = None
-            legend_vals = None
 
         fig = go.Figure()
-        for i, val in zip(indices, legend_vals):
+        if type != "tv_phase_diagram":
+            for i, val in zip(indices, legend_vals):
+                fig.add_trace(
+                    go.Scatter(
+                        x=x_data,
+                        y=y_data[i, :] if fixed_by == "temperature" else y_data[:, i],
+                        mode="lines",
+                        showlegend=True,
+                        name=legend_fmt(val),
+                        legendgroup=legend_fmt(val),
+                    )
+                )
+        else:
+            # Add miscibility gap traces
+            for showlegend, x_key in zip([True, False], ["V_left_first_order", "V_right_first_order"]):
+                fig.add_trace(
+                    go.Scatter(
+                        x=x_data[x_key],
+                        y=y_data['T_first_order'],
+                        mode="lines",
+                        line=dict(color='#636efa', dash="dash"),
+                        name="Misc. Gap",
+                        legendgroup="misc_gap",
+                        showlegend=showlegend
+                    )
+                )
+            # Add second order trace
             fig.add_trace(
                 go.Scatter(
-                    x=x_data,
-                    y=y_data[i, :] if fixed_by == "temperature" else y_data[:, i],
+                    x=x_data["V_second_order"],
+                    y=y_data['T_second_order'],
                     mode="lines",
-                    showlegend=True,
-                    name=legend_fmt(val),
-                    legendgroup=legend_fmt(val),
+                    line=dict(color='#636efa', dash="solid"),
+                    name="2<sup>nd</sup> Order",
                 )
             )
 
         unit = "atom" if self.number_of_atoms == 1 else f"{self.number_of_atoms} atoms"
         x_label = "Temperature (K)" if "temperature" in type else f"Volume (Å³/{unit})"
         y_label = y_label_template.format(unit=unit)
-
         format_plot(fig, x_label, y_label, width=width, height=height)
         return fig
 
+    # TODO: write tests for pt_phase_diagram
     def plot_pt(
         self,
         type: str,
@@ -880,6 +915,12 @@ class System:
                 "fixed": "pressure",
                 "ylabel": "Probability",
             },
+            "pt_phase_diagram": {
+                "x": self.pt_phase_diagram["second_order"]["T"] if len(self.pt_phase_diagram) > 0 else None,
+                "y": self.pt_phase_diagram["second_order"]["P"] if len(self.pt_phase_diagram) > 0 else None,
+                "fixed": None,
+                "ylabel": "Pressure (GPa)",
+            },
         }
 
         if type not in plot_data:
@@ -942,12 +983,6 @@ class System:
                             )
                             if res.converged:
                                 roots.append(res.root)
-                    if roots:
-                        temp_50 = roots[0]  # Take the first crossing
-                        fig.add_vline(
-                            x=temp_50,
-                            line=dict(color="black", dash="dash"),
-                        )
                 except Exception:
                     pass  # Do not plot the vertical line if interpolation/root finding fails
                 # Sum all probabilities except the ground state
@@ -975,6 +1010,7 @@ class System:
                                 name=name,
                             )
                         )
+
             else:
                 for name, probs in y_data.items():
                     traces.append(
@@ -997,6 +1033,19 @@ class System:
                 ),
                 yaxis=dict(range=[0, None]),
             )
+        # TODO: write tests for these    
+        elif type == "pt_phase_diagram":
+            fig.add_trace(
+                go.Scatter(
+                    x=x_data,
+                    y=y_data,
+                    mode="lines",
+                    line=dict(color='#636efa', dash="solid"),
+                )
+            )
+            x_label = "Temperature (K)"
+            y_label = "Pressure (GPa)"
+        
         else:
             if fixed_by == "temperature":
                 for i, val in zip(indices, legend_vals):
