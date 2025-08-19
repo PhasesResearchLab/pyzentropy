@@ -796,7 +796,7 @@ class System:
                         x=x_data[x_key],
                         y=y_data['T_first_order'],
                         mode="lines",
-                        line=dict(color='#636efa', dash="dash"),
+                        line=dict(color='#636efa', dash="solid"),
                         name="Misc. Gap",
                         legendgroup="misc_gap",
                         showlegend=showlegend
@@ -808,9 +808,27 @@ class System:
                     x=x_data["V_second_order"],
                     y=y_data['T_second_order'],
                     mode="lines",
-                    line=dict(color='#636efa', dash="solid"),
+                    line=dict(color='#636efa', dash="dash"),
                     name="2<sup>nd</sup> Order",
                 )
+            )
+            # Plot open circle for the last point of second order
+            fig.add_trace(
+                go.Scatter(
+                    x=[x_data["V_second_order"][-1]],
+                    y=[y_data['T_second_order'][-1]],
+                    mode="markers",
+                    marker=dict(
+                        color="red",           
+                        size=20,
+                        symbol="circle-open"    
+                    ),
+                    name="Critical Point",
+                    showlegend=False
+                )
+            )
+            fig.update_layout(
+                yaxis=dict(range=[0, max(y_data['T_second_order'])])
             )
 
         unit = "atom" if self.number_of_atoms == 1 else f"{self.number_of_atoms} atoms"
@@ -916,8 +934,8 @@ class System:
                 "ylabel": "Probability",
             },
             "pt_phase_diagram": {
-                "x": self.pt_phase_diagram["second_order"]["T"] if len(self.pt_phase_diagram) > 0 else None,
-                "y": self.pt_phase_diagram["second_order"]["P"] if len(self.pt_phase_diagram) > 0 else None,
+                "x": self.pt_phase_diagram["second_order"]["P"] if len(self.pt_phase_diagram) > 0 else None,
+                "y": self.pt_phase_diagram["second_order"]["T"] if len(self.pt_phase_diagram) > 0 else None,
                 "fixed": None,
                 "ylabel": "Pressure (GPa)",
             },
@@ -984,7 +1002,7 @@ class System:
                             if res.converged:
                                 roots.append(res.root)
                 except Exception:
-                    pass  # Do not plot the vertical line if interpolation/root finding fails
+                    pass  
                 # Sum all probabilities except the ground state
                 excited_probs = np.zeros_like(x_data, dtype=float)
                 for name, probs in y_data.items():
@@ -1040,12 +1058,34 @@ class System:
                     x=x_data,
                     y=y_data,
                     mode="lines",
-                    line=dict(color='#636efa', dash="solid"),
+                    line=dict(color='#636efa', dash="dash"),
+                    name="2<sup>nd</sup> Order",
+                    showlegend=True,
                 )
             )
-            x_label = "Temperature (K)"
-            y_label = "Pressure (GPa)"
-        
+            fig.update_layout(
+                xaxis=dict(autorange='reversed'),
+                yaxis=dict(range=[0, max(y_data)])
+            )
+            x_label = "Pressure (GPa)"
+            y_label = "Temperature (K)"
+
+            # Plot open circle for the last point of second order
+            last_valid_index = np.where(~np.isnan(y_data))[0][-1] if np.any(~np.isnan(y_data)) else None
+            fig.add_trace(
+                go.Scatter(
+                    x=[x_data[last_valid_index]],
+                    y=[y_data[last_valid_index]],
+                    mode="markers",
+                    marker=dict(
+                        color="red",           
+                        size=20,
+                        symbol="circle-open"    
+                    ),
+                    name="Critical Point",
+                    showlegend=False
+                )
+            )
         else:
             if fixed_by == "temperature":
                 for i, val in zip(indices, legend_vals):

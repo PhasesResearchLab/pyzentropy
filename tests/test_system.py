@@ -263,6 +263,7 @@ def test_calculate_pressure_properties():
 
     # Test with all entropies set to None
     system2 = make_system(local_config_data, reference_helmholtz_energies)
+    #TODO: continue here
     system2.configurational_entropies = None
     system2.entropies = None
     system2.calculate_pressure_properties(P=0)
@@ -307,6 +308,19 @@ def test_calculate_pressure_properties():
     ):
         system5.calculate_pressure_properties(P=0)
 
+
+def test_calculate_phase_diagrams():
+    local_config_data = copy.deepcopy(config_data)
+    system = make_system(local_config_data, reference_helmholtz_energies)
+    system.calculate_phase_diagrams(ground_state="config_0")
+    # Test values against expected results
+    assert np.allclose(system.pt_phase_diagram["second_order"]["P"], expected_results.pt_phase_diagram["second_order"]["P"])
+    assert np.allclose(system.pt_phase_diagram["second_order"]["T"], expected_results.pt_phase_diagram["second_order"]["T"], equal_nan=True)
+    assert np.allclose(system.tv_phase_diagram["first_order"]["V_left"], expected_results.tv_phase_diagram["first_order"]["V_left"])
+    assert np.allclose(system.tv_phase_diagram["first_order"]["V_right"], expected_results.tv_phase_diagram["first_order"]["V_right"])
+    assert np.allclose(system.tv_phase_diagram["first_order"]["T"], expected_results.tv_phase_diagram["first_order"]["T"])
+    assert np.allclose(system.tv_phase_diagram["second_order"]["V"], expected_results.tv_phase_diagram["second_order"]["V"])
+    assert np.allclose(system.tv_phase_diagram["second_order"]["T"], expected_results.tv_phase_diagram["second_order"]["T"])
 
 # Plotting Tests
 @pytest.mark.parametrize(
