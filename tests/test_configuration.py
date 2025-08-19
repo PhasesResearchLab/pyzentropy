@@ -35,6 +35,7 @@ def test_configuration_shape_check():
 
 
 # Load test data once for all tests
+# Contains config_0, config_28, and config_22 using Nigel's EV and Shang's Debye using his MATLAB code
 test_data_path = os.path.join(os.path.dirname(__file__), "test_data", "test_configs.pkl")
 with open(test_data_path, "rb") as f:
     config_data = pickle.load(f)
