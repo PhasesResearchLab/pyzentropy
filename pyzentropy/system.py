@@ -76,7 +76,7 @@ class System:
 
         # Initialize pressure-temperature and volume-temperature diagrams
         self.pt_phase_diagram = {}
-        self.tv_phase_diagram = {}
+        self.vt_phase_diagram = {}
 
     def calculate_partition_functions(self) -> None:
         """
@@ -133,10 +133,7 @@ class System:
             raise ValueError("Partition functions not calculated. Call calculate_partition_functions() first.")
 
         # Calculate Helmholtz energies
-        self.helmholtz_energies = (
-            -BOLTZMANN_CONSTANT * self.temperatures[:, np.newaxis] * np.log(self.partition_functions)
-            + reference_helmholtz_energies
-        )
+        self.helmholtz_energies = -BOLTZMANN_CONSTANT * self.temperatures[:, np.newaxis] * np.log(self.partition_functions) + reference_helmholtz_energies
 
     def calculate_helmholtz_energies_dV(self) -> None:
         """
@@ -151,9 +148,7 @@ class System:
         # Check that probabilities and dF/dV are calculated for each configuration
         for config in self.configurations.values():
             if config.probabilities is None:
-                raise ValueError(
-                    f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first."
-                )
+                raise ValueError(f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first.")
             if config.helmholtz_energies_dV is None:
                 raise ValueError(f"helmholtz_energies_dV not set for configuration '{config.name}'.")
             self.helmholtz_energies_dV += config.probabilities * config.helmholtz_energies_dV
@@ -161,12 +156,17 @@ class System:
         # Replace inf values with nan
         self.helmholtz_energies_dV[np.isinf(self.helmholtz_energies_dV)] = np.nan
 
+    # TODO: Change to use Sk and pk only
     def calculate_entropies(self) -> None:
         """
         Calculate the configurational entropy, total entropy, and internal energy for the system.
 
         Raises:
-            ValueError: If Helmholtz energies or probabilities are missing for any configuration.
+            ValueError: If any of the following are not calculated:
+                - Helmholtz energies for the system (self.helmholtz_energies)
+                - Probabilities for any configuration (config.probabilities)
+                - Internal energies for any configuration (config.internal_energies)
+                - Helmholtz energies for any configuration (config.helmholtz_energies)
         """
         # Initialize arrays
         self.configurational_entropies = np.zeros((self._n_temps, self._n_vols))
@@ -182,9 +182,7 @@ class System:
         # Accumulate contributions from each configuration
         for config in self.configurations.values():
             if config.probabilities is None:
-                raise ValueError(
-                    f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first."
-                )
+                raise ValueError(f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first.")
             if config.internal_energies is None:
                 raise ValueError(f"Internal energies not set for configuration '{config.name}'.")
             if config.helmholtz_energies is None:
@@ -218,9 +216,7 @@ class System:
             # Check that the probabilities, dF/dV, and d2F/dV2 are calculated for each configuration
             for config in self.configurations.values():
                 if config.probabilities is None:
-                    raise ValueError(
-                        f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first."
-                    )
+                    raise ValueError(f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first.")
                 if config.helmholtz_energies_dV is None:
                     raise ValueError(f"helmholtz_energies_dV not set for configuration '{config.name}'.")
                 if config.helmholtz_energies_d2V2 is None:
@@ -267,9 +263,7 @@ class System:
         # Accumulate contributions from each configuration
         for config in self.configurations.values():
             if config.probabilities is None:
-                raise ValueError(
-                    f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first."
-                )
+                raise ValueError(f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first.")
             if config.heat_capacities is None:
                 raise ValueError(f"Heat capacities not set for configuration '{config.name}'.")
             if config.internal_energies is None:
@@ -289,16 +283,17 @@ class System:
             P (float): Pressure in GPa.
 
         Raises:
-            ValueError: If required Helmholtz energies or their derivatives are not calculated.
+            ValueError: If any of the following are not calculated:
+                - Helmholtz energies (self.helmholtz_energies)
+                - Helmholtz energies first derivative (self.helmholtz_energies_dV)
+                - Probabilities for any configuration (config.probabilities)
         """
 
         # Check required attributes
         if self.helmholtz_energies is None:
             raise ValueError("Helmholtz energies not calculated. Call calculate_helmholtz_energies() first.")
         if self.helmholtz_energies_dV is None:
-            raise ValueError(
-                "Helmholtz energies derivatives not calculated. Call calculate_helmholtz_energies_dV() first."
-            )
+            raise ValueError("Helmholtz energies derivatives not calculated. Call calculate_helmholtz_energies_dV() first.")
         self.pt_properties[f"{P:.2f}_GPa"] = {
             "helmholtz_energy_pv": None,
             "V0": None,
@@ -322,11 +317,7 @@ class System:
             volumes = self.volumes
             derivatives = self.helmholtz_energies_dV[i, :]
             helmholtz_energies = self.helmholtz_energies[i, :]
-            configurational_entropies = (
-                self.configurational_entropies[i, :]
-                if self.configurational_entropies is not None
-                else np.full_like(volumes, np.nan)
-            )
+            configurational_entropies = self.configurational_entropies[i, :] if self.configurational_entropies is not None else np.full_like(volumes, np.nan)
             entropies = self.entropies[i, :] if self.entropies is not None else np.full_like(volumes, np.nan)
             bulk_moduli = self.bulk_moduli[i, :] if self.bulk_moduli is not None else np.full_like(volumes, np.nan)
 
@@ -355,9 +346,7 @@ class System:
                 continue
 
             # Interpolators
-            dfdv_interpolator = PchipInterpolator(
-                filtered_helmholtz_volumes, filtered_derivatives + P_eV_per_A3, extrapolate=True
-            )
+            dfdv_interpolator = PchipInterpolator(filtered_helmholtz_volumes, filtered_derivatives + P_eV_per_A3, extrapolate=True)
             helmholtz_energy_interpolator = PchipInterpolator(
                 filtered_helmholtz_volumes,
                 filtered_helmholtz_energies + P_eV_per_A3 * filtered_helmholtz_volumes,  # F + PV
@@ -385,9 +374,7 @@ class System:
             # Interpolate entropy at V0
             if len(filtered_entropy_volumes) >= 5:
                 try:
-                    Sconf_interp = PchipInterpolator(
-                        filtered_entropy_volumes, filtered_configurational_entropies, extrapolate=True
-                    )
+                    Sconf_interp = PchipInterpolator(filtered_entropy_volumes, filtered_configurational_entropies, extrapolate=True)
                     S0_interp = PchipInterpolator(filtered_entropy_volumes, filtered_entropies, extrapolate=True)
                     Sconf_array.append(Sconf_interp(min_x))
                     S0_array.append(S0_interp(min_x))
@@ -433,9 +420,7 @@ class System:
         # Calculate probabilities at P for each configuration
         for config in self.configurations.values():
             if config.probabilities is None:
-                raise ValueError(
-                    f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first."
-                )
+                raise ValueError(f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first.")
             prob_at_V0 = np.full(self._n_temps, np.nan)
             for i in range(self._n_temps):
                 probabilities = config.probabilities[i, :]
@@ -444,20 +429,14 @@ class System:
                 filtered_probabilities = probabilities[valid_probability_indices]
                 if len(filtered_volumes) < 2:
                     continue
-                probabilities_interpolator = PchipInterpolator(
-                    filtered_volumes, filtered_probabilities, extrapolate=True
-                )
+                probabilities_interpolator = PchipInterpolator(filtered_volumes, filtered_probabilities, extrapolate=True)
                 try:
                     prob_at_V0[i] = probabilities_interpolator(self.pt_properties[f"{P:.2f}_GPa"]["V0"][i])
                 except Exception:
                     prob_at_V0[i] = np.nan
             config.probabilities_at_P[f"{P:.2f}_GPa"] = prob_at_V0
 
-    # TODO: For tests:
-    # Have to set F, dF/dV, and d^2F/dV^2 first before calling calculate_pressure_properties
-    def calculate_phase_diagrams(
-        self, ground_state: str, dP: float = 0.2, volume_step_size: float = 1e-4, atol: float = 1e-6
-    ) -> None:
+    def calculate_phase_diagrams(self, ground_state: str, dP: float = 0.2, volume_step_size: float = 1e-4, atol: float = 1e-6) -> None:
         """
         Calculate pressure-temperature and volume-temperature phase diagrams for the system.
 
@@ -466,13 +445,30 @@ class System:
             dP (float): Pressure increment in GPa. Default is 0.2 GPa.
             volume_step_size (float): Step size for volume when searching for the miscibility gap. Default is 1e-4.
             atol (float): Absolute tolerance for convergence in the common tangent search. Default is 1e-6.
+
+        Raises:
+            ValueError: If any of the following are not calculated:
+                - Helmholtz energies second derivative (helmholtz_energies_d2V2)
+                - Helmholtz energies first derivative (helmholtz_energies_dV)
+                - Helmholtz energies (helmholtz_energies)
+                - Probabilities for any configuration
         """
+
+        if self.helmholtz_energies_d2V2 is None:
+            raise ValueError("Helmholtz energies second derivative not calculated. Call calculate_helmholtz_energies_d2V2() first.")
+        if self.helmholtz_energies_dV is None:
+            raise ValueError("Helmholtz energies first derivative not calculated. Call calculate_helmholtz_energies_dV() first.")
+        if self.helmholtz_energies is None:
+            raise ValueError("Helmholtz energies not calculated. Call calculate_helmholtz_energies() first.")
+        for name, config in self.configurations.items():
+            if config.probabilities is None:
+                raise ValueError(f"Probabilities not set for configuration '{name}'. Call calculate_probabilities() first.")
 
         # Initialize phase diagram containers
         self.pt_phase_diagram = {
             "second_order": {"P": np.array([]), "T": np.array([])},
         }
-        self.tv_phase_diagram = {
+        self.vt_phase_diagram = {
             "first_order": {"V_left": np.array([]), "V_right": np.array([]), "T": np.array([])},
             "second_order": {"V": np.array([]), "T": np.array([])},
         }
@@ -493,9 +489,7 @@ class System:
                 roots = []
                 for i in range(len(self.temperatures) - 1):
                     # Check if probability crosses 0.5 between consecutive points
-                    if (gs_probabilities[i] - 0.5) * (
-                        gs_probabilities[i + 1] - 0.5
-                    ) < 0:  # True if there is a change of sign
+                    if (gs_probabilities[i] - 0.5) * (gs_probabilities[i + 1] - 0.5) < 0:  # True if there is a change of sign
                         res = root_scalar(
                             lambda T: interp_probabilities(T) - 0.5,
                             bracket=(self.temperatures[i], self.temperatures[i + 1]),
@@ -512,8 +506,8 @@ class System:
                     V0_at_T50 = interp_V0(temp_50)
                     self.pt_phase_diagram["second_order"]["P"] = np.append(self.pt_phase_diagram["second_order"]["P"], P)
                     self.pt_phase_diagram["second_order"]["T"] = np.append(self.pt_phase_diagram["second_order"]["T"], temp_50)
-                    self.tv_phase_diagram["second_order"]["V"] = np.append(self.tv_phase_diagram["second_order"]["V"], V0_at_T50)
-                    self.tv_phase_diagram["second_order"]["T"] = np.append(self.tv_phase_diagram["second_order"]["T"], temp_50)
+                    self.vt_phase_diagram["second_order"]["V"] = np.append(self.vt_phase_diagram["second_order"]["V"], V0_at_T50)
+                    self.vt_phase_diagram["second_order"]["T"] = np.append(self.vt_phase_diagram["second_order"]["T"], temp_50)
 
                 P += dP
 
@@ -523,9 +517,7 @@ class System:
 
         # Find first order phase transition points (miscibility gap) using the common tangent method
         for index, temperature in enumerate(self.temperatures):
-            V0 = self.pt_properties[f"{0.0:.2f}_GPa"]["V0"][
-                index
-            ]  # Only consider 0 GPa for miscibility gap for T-V diagram
+            V0 = self.pt_properties[f"{0.0:.2f}_GPa"]["V0"][index]  # Only consider 0 GPa for miscibility gap for T-V diagram
             min_V0 = 0.9 * V0  # Set a threshold for minimum V0
             max_V0 = 1.1 * V0  # Set a threshold for maximum V0
 
@@ -542,9 +534,7 @@ class System:
             # Find sign changes in d^2F/dV^2 (roots)
             roots = []
             for i in range(len(filtered_volumes) - 1):
-                if (
-                    filtered_helmholtz_energies_d2V2[i] * filtered_helmholtz_energies_d2V2[i + 1]
-                ) < 0:  # True if there is a change of sign
+                if (filtered_helmholtz_energies_d2V2[i] * filtered_helmholtz_energies_d2V2[i + 1]) < 0:  # True if there is a change of sign
                     res = root_scalar(
                         d2V2_interpolator,
                         bracket=(filtered_volumes[i], filtered_volumes[i + 1]),
@@ -571,31 +561,21 @@ class System:
                     left_helmholtz_energy_dV = dV_interpolator(left_volume)
                     right_helmholtz_energy_dV = dV_interpolator(right_volume)
 
-                self.tv_phase_diagram["first_order"]["V_left"] = np.append(
-                    self.tv_phase_diagram["first_order"]["V_left"], left_volume
-                )
-                self.tv_phase_diagram["first_order"]["V_right"] = np.append(
-                    self.tv_phase_diagram["first_order"]["V_right"], right_volume
-                )
-                self.tv_phase_diagram["first_order"]["T"] = np.append(self.tv_phase_diagram["first_order"]["T"], temperature)
+                self.vt_phase_diagram["first_order"]["V_left"] = np.append(self.vt_phase_diagram["first_order"]["V_left"], left_volume)
+                self.vt_phase_diagram["first_order"]["V_right"] = np.append(self.vt_phase_diagram["first_order"]["V_right"], right_volume)
+                self.vt_phase_diagram["first_order"]["T"] = np.append(self.vt_phase_diagram["first_order"]["T"], temperature)
 
         # Remove second order points that fall within the miscibility gap region
-        max_T_first_order = np.max(self.tv_phase_diagram["first_order"]["T"])
-        mask = self.tv_phase_diagram["second_order"]["T"] > max_T_first_order
-        self.tv_phase_diagram["second_order"]["V"] = self.tv_phase_diagram["second_order"]["V"][mask]
-        self.tv_phase_diagram["second_order"]["T"] = self.tv_phase_diagram["second_order"]["T"][mask]
+        max_T_first_order = np.max(self.vt_phase_diagram["first_order"]["T"])
+        mask = self.vt_phase_diagram["second_order"]["T"] > max_T_first_order
+        self.vt_phase_diagram["second_order"]["V"] = self.vt_phase_diagram["second_order"]["V"][mask]
+        self.vt_phase_diagram["second_order"]["T"] = self.vt_phase_diagram["second_order"]["T"][mask]
         self.pt_phase_diagram["second_order"]["T"] = np.where(mask, self.pt_phase_diagram["second_order"]["T"], np.nan)
 
         # Add the last second order point to the end of first order arrays for continuity in the diagram
-        self.tv_phase_diagram["first_order"]["V_left"] = np.append(
-            self.tv_phase_diagram["first_order"]["V_left"], self.tv_phase_diagram["second_order"]["V"][-1]
-        )
-        self.tv_phase_diagram["first_order"]["V_right"] = np.append(
-            self.tv_phase_diagram["first_order"]["V_right"], self.tv_phase_diagram["second_order"]["V"][-1]
-        )
-        self.tv_phase_diagram["first_order"]["T"] = np.append(
-            self.tv_phase_diagram["first_order"]["T"], self.tv_phase_diagram["second_order"]["T"][-1]
-        )
+        self.vt_phase_diagram["first_order"]["V_left"] = np.append(self.vt_phase_diagram["first_order"]["V_left"], self.vt_phase_diagram["second_order"]["V"][-1])
+        self.vt_phase_diagram["first_order"]["V_right"] = np.append(self.vt_phase_diagram["first_order"]["V_right"], self.vt_phase_diagram["second_order"]["V"][-1])
+        self.vt_phase_diagram["first_order"]["T"] = np.append(self.vt_phase_diagram["first_order"]["T"], self.vt_phase_diagram["second_order"]["T"][-1])
 
         return None
 
@@ -728,15 +708,23 @@ class System:
             },
             # TODO: write tests for this
             "tv_phase_diagram": {
-                "x": {
-                    "V_left_first_order": self.tv_phase_diagram["first_order"]["V_left"],
-                    "V_right_first_order": self.tv_phase_diagram["first_order"]["V_right"],
-                    "V_second_order": self.tv_phase_diagram["second_order"]["V"],
-                } if len(self.tv_phase_diagram) > 0 else None,
-                "y": {
-                    'T_first_order': self.tv_phase_diagram['first_order']['T'],
-                    'T_second_order': self.tv_phase_diagram['second_order']['T'],
-                } if len(self.tv_phase_diagram) > 0 else None,
+                "x": (
+                    {
+                        "V_left_first_order": self.vt_phase_diagram["first_order"]["V_left"],
+                        "V_right_first_order": self.vt_phase_diagram["first_order"]["V_right"],
+                        "V_second_order": self.vt_phase_diagram["second_order"]["V"],
+                    }
+                    if len(self.vt_phase_diagram) > 0
+                    else None
+                ),
+                "y": (
+                    {
+                        "T_first_order": self.vt_phase_diagram["first_order"]["T"],
+                        "T_second_order": self.vt_phase_diagram["second_order"]["T"],
+                    }
+                    if len(self.vt_phase_diagram) > 0
+                    else None
+                ),
                 "fixed": None,
                 "ylabel": "Temperature (K)",
             },
@@ -757,20 +745,12 @@ class System:
 
         # Select indices and labels for fixed_by
         if fixed_by == "temperature":
-            selected = (
-                selected_temperatures
-                if selected_temperatures is not None
-                else np.linspace(self.temperatures.min(), self.temperatures.max(), 10)
-            )
+            selected = selected_temperatures if selected_temperatures is not None else np.linspace(self.temperatures.min(), self.temperatures.max(), 10)
             indices = self._get_closest_indices(self.temperatures, selected)
             legend_vals = self.temperatures[indices]
             legend_fmt = lambda t: f"{int(t)} K" if t % 1 == 0 else f"{t} K"
         elif fixed_by == "volume":
-            selected = (
-                selected_volumes
-                if selected_volumes is not None
-                else np.linspace(self.volumes.min(), self.volumes.max(), 10)
-            )
+            selected = selected_volumes if selected_volumes is not None else np.linspace(self.volumes.min(), self.volumes.max(), 10)
             indices = self._get_closest_indices(self.volumes, selected)
             legend_vals = self.volumes[indices]
             legend_fmt = lambda v: f"{v:.2f} Å³"
@@ -792,44 +772,25 @@ class System:
             # Add miscibility gap traces
             for showlegend, x_key in zip([True, False], ["V_left_first_order", "V_right_first_order"]):
                 fig.add_trace(
-                    go.Scatter(
-                        x=x_data[x_key],
-                        y=y_data['T_first_order'],
-                        mode="lines",
-                        line=dict(color='#636efa', dash="solid"),
-                        name="Misc. Gap",
-                        legendgroup="misc_gap",
-                        showlegend=showlegend
-                    )
+                    go.Scatter(x=x_data[x_key], y=y_data["T_first_order"], mode="lines", line=dict(color="#636efa", dash="solid"), name="Misc. Gap", legendgroup="misc_gap", showlegend=showlegend)
                 )
             # Add second order trace
             fig.add_trace(
                 go.Scatter(
                     x=x_data["V_second_order"],
-                    y=y_data['T_second_order'],
+                    y=y_data["T_second_order"],
                     mode="lines",
-                    line=dict(color='#636efa', dash="dash"),
+                    line=dict(color="#636efa", dash="6px,4px"),
                     name="2<sup>nd</sup> Order",
                 )
             )
             # Plot open circle for the last point of second order
             fig.add_trace(
                 go.Scatter(
-                    x=[x_data["V_second_order"][-1]],
-                    y=[y_data['T_second_order'][-1]],
-                    mode="markers",
-                    marker=dict(
-                        color="red",           
-                        size=20,
-                        symbol="circle-open"    
-                    ),
-                    name="Critical Point",
-                    showlegend=False
+                    x=[x_data["V_second_order"][-1]], y=[y_data["T_second_order"][-1]], mode="markers", marker=dict(color="red", size=20, symbol="circle-open"), name="Critical Point", showlegend=False
                 )
             )
-            fig.update_layout(
-                yaxis=dict(range=[0, max(y_data['T_second_order'])])
-            )
+            fig.update_layout(yaxis=dict(range=[0, max(y_data["T_second_order"])]))
 
         unit = "atom" if self.number_of_atoms == 1 else f"{self.number_of_atoms} atoms"
         x_label = "Temperature (K)" if "temperature" in type else f"Volume (Å³/{unit})"
@@ -958,11 +919,7 @@ class System:
 
         # Select indices and labels for fixed_by
         if fixed_by == "temperature":
-            selected = (
-                selected_temperatures
-                if selected_temperatures is not None
-                else np.linspace(self.temperatures.min(), self.temperatures.max(), 10)
-            )
+            selected = selected_temperatures if selected_temperatures is not None else np.linspace(self.temperatures.min(), self.temperatures.max(), 10)
             indices = self._get_closest_indices(self.temperatures, selected)
             legend_vals = self.temperatures[indices]
             legend_fmt = lambda t: f"{int(t)} K" if t % 1 == 0 else f"{t} K"
@@ -1002,7 +959,7 @@ class System:
                             if res.converged:
                                 roots.append(res.root)
                 except Exception:
-                    pass  
+                    pass
                 # Sum all probabilities except the ground state
                 excited_probs = np.zeros_like(x_data, dtype=float)
                 for name, probs in y_data.items():
@@ -1051,40 +1008,26 @@ class System:
                 ),
                 yaxis=dict(range=[0, None]),
             )
-        # TODO: write tests for these    
+        # TODO: write tests for these
         elif type == "pt_phase_diagram":
             fig.add_trace(
                 go.Scatter(
                     x=x_data,
                     y=y_data,
                     mode="lines",
-                    line=dict(color='#636efa', dash="dash"),
+                    line=dict(color="#636efa", dash="6px,4px"),
                     name="2<sup>nd</sup> Order",
                     showlegend=True,
                 )
             )
-            fig.update_layout(
-                xaxis=dict(autorange='reversed'),
-                yaxis=dict(range=[0, max(y_data)])
-            )
+            fig.update_layout(xaxis=dict(autorange="reversed"), yaxis=dict(range=[0, max(y_data)]))
             x_label = "Pressure (GPa)"
             y_label = "Temperature (K)"
 
             # Plot open circle for the last point of second order
             last_valid_index = np.where(~np.isnan(y_data))[0][-1] if np.any(~np.isnan(y_data)) else None
             fig.add_trace(
-                go.Scatter(
-                    x=[x_data[last_valid_index]],
-                    y=[y_data[last_valid_index]],
-                    mode="markers",
-                    marker=dict(
-                        color="red",           
-                        size=20,
-                        symbol="circle-open"    
-                    ),
-                    name="Critical Point",
-                    showlegend=False
-                )
+                go.Scatter(x=[x_data[last_valid_index]], y=[y_data[last_valid_index]], mode="markers", marker=dict(color="red", size=20, symbol="circle-open"), name="Critical Point", showlegend=False)
             )
         else:
             if fixed_by == "temperature":
