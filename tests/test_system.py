@@ -381,7 +381,7 @@ def test_calculate_phase_diagrams():
         system4.calculate_phase_diagrams(ground_state="config_0")
 
 
-# Plotting Tests
+# Plotting Tests for plot_vt
 @pytest.mark.parametrize(
     "plot_type",
     [
@@ -399,12 +399,15 @@ def test_calculate_phase_diagrams():
         "heat_capacity_vs_temperature",
         "bulk_modulus_vs_volume",
         "bulk_modulus_vs_temperature",
+        "vt_phase_diagram",
     ],
 )
 def test_plot_vt_smoke(plot_type):
     """Test that plot_vt runs without error for all supported plot types."""
     local_config_data = copy.deepcopy(config_data)
     system = make_system(local_config_data, reference_helmholtz_energies)
+    if plot_type == "vt_phase_diagram":
+        system.calculate_phase_diagrams(ground_state="config_0")
     system.plot_vt(plot_type)
 
 
@@ -433,13 +436,15 @@ def test_plot_vt_invalid_type():
         ("heat_capacity_vs_temperature", "heat_capacities"),
         ("bulk_modulus_vs_volume", "bulk_moduli"),
         ("bulk_modulus_vs_temperature", "bulk_moduli"),
+        ("vt_phase_diagram", "vt_phase_diagram"),
     ],
 )
 def test_plot_vt_missing_data(plot_type, attr):
     """Test that missing required data for each plot type raises ValueError."""
     local_config_data = copy.deepcopy(config_data)
     system = System(local_config_data)
-    setattr(system, attr, None)
+    if plot_type != "vt_phase_diagram":
+        setattr(system, attr, None)
     with pytest.raises(ValueError):
         system.plot_vt(plot_type)
 
@@ -482,26 +487,18 @@ def test_plot_vt_selected_volumes(plot_type):
     system.plot_vt(plot_type, selected_volumes=np.array([100, 150, 200]))
 
 
+# Plotting Tests for plot_pt
 @pytest.mark.parametrize(
     "plot_type",
-    [
-        "helmholtz_energy_pv_vs_volume",
-        "volume_vs_temperature",
-        "CTE_vs_temperature",
-        "LCTE_vs_temperature",
-        "entropy_vs_temperature",
-        "configurational_entropy_vs_temperature",
-        "heat_capacity_vs_temperature",
-        "gibbs_energy_vs_temperature",
-        "bulk_modulus_vs_temperature",
-        "probability_vs_temperature",
-    ],
+    ["helmholtz_energy_pv_vs_volume", "volume_vs_temperature", "CTE_vs_temperature", "LCTE_vs_temperature", "entropy_vs_temperature", "configurational_entropy_vs_temperature", "heat_capacity_vs_temperature", "gibbs_energy_vs_temperature", "bulk_modulus_vs_temperature", "probability_vs_temperature", "pt_phase_diagram"],
 )
 def test_plot_pt_smoke(plot_type):
     """Test that plot_pt runs without error for all supported plot types."""
     local_config_data = copy.deepcopy(config_data)
     system = make_system(local_config_data, reference_helmholtz_energies)
     system.calculate_pressure_properties(P=0)
+    if plot_type == "pt_phase_diagram":
+        system.calculate_phase_diagrams(ground_state="config_0")
     system.plot_pt(plot_type)
 
 
@@ -524,24 +521,15 @@ def test_plot_pt_invalid_type():
 
 @pytest.mark.parametrize(
     "plot_type",
-    [
-        "helmholtz_energy_pv_vs_volume",
-        "volume_vs_temperature",
-        "CTE_vs_temperature",
-        "LCTE_vs_temperature",
-        "entropy_vs_temperature",
-        "configurational_entropy_vs_temperature",
-        "heat_capacity_vs_temperature",
-        "gibbs_energy_vs_temperature",
-        "bulk_modulus_vs_temperature",
-        "probability_vs_temperature",
-    ],
+    ["pt_phase_diagram"],
 )
 def test_plot_pt_missing_data(plot_type):
     """Test that missing required data for each plot type raises ValueError."""
     local_config_data = copy.deepcopy(config_data)
     system = make_system(local_config_data, reference_helmholtz_energies)
-    with pytest.raises(ValueError):
+    system.calculate_pressure_properties(P=0)
+    expected_msg = re.escape(f"{plot_type} data not calculated. Run the appropriate calculation method first.")
+    with pytest.raises(ValueError, match=expected_msg):
         system.plot_pt(plot_type)
 
 

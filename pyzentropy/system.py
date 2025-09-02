@@ -706,8 +706,7 @@ class System:
                 "fixed": "volume",
                 "ylabel": "B (GPa)",
             },
-            # TODO: write tests for this
-            "tv_phase_diagram": {
+            "vt_phase_diagram": {
                 "x": (
                     {
                         "V_left_first_order": self.vt_phase_diagram["first_order"]["V_left"],
@@ -756,7 +755,7 @@ class System:
             legend_fmt = lambda v: f"{v:.2f} Å³"
 
         fig = go.Figure()
-        if type != "tv_phase_diagram":
+        if type != "vt_phase_diagram":
             for i, val in zip(indices, legend_vals):
                 fig.add_trace(
                     go.Scatter(
@@ -771,9 +770,7 @@ class System:
         else:
             # Add miscibility gap traces
             for showlegend, x_key in zip([True, False], ["V_left_first_order", "V_right_first_order"]):
-                fig.add_trace(
-                    go.Scatter(x=x_data[x_key], y=y_data["T_first_order"], mode="lines", line=dict(color="#636efa", dash="solid"), name="Misc. Gap", legendgroup="misc_gap", showlegend=showlegend)
-                )
+                fig.add_trace(go.Scatter(x=x_data[x_key], y=y_data["T_first_order"], mode="lines", line=dict(color="#636efa", dash="solid"), name="Misc. Gap", legendgroup="misc_gap", showlegend=showlegend))
             # Add second order trace
             fig.add_trace(
                 go.Scatter(
@@ -785,11 +782,7 @@ class System:
                 )
             )
             # Plot open circle for the last point of second order
-            fig.add_trace(
-                go.Scatter(
-                    x=[x_data["V_second_order"][-1]], y=[y_data["T_second_order"][-1]], mode="markers", marker=dict(color="red", size=20, symbol="circle-open"), name="Critical Point", showlegend=False
-                )
-            )
+            fig.add_trace(go.Scatter(x=[x_data["V_second_order"][-1]], y=[y_data["T_second_order"][-1]], mode="markers", marker=dict(color="red", size=20, symbol="circle-open"), name="Critical Point", showlegend=False))
             fig.update_layout(yaxis=dict(range=[0, max(y_data["T_second_order"])]))
 
         unit = "atom" if self.number_of_atoms == 1 else f"{self.number_of_atoms} atoms"
@@ -798,7 +791,6 @@ class System:
         format_plot(fig, x_label, y_label, width=width, height=height)
         return fig
 
-    # TODO: write tests for pt_phase_diagram
     def plot_pt(
         self,
         type: str,
@@ -914,8 +906,6 @@ class System:
         # Check for missing y_data (e.g., not calculated yet)
         if y_data is None:
             raise ValueError(f"{type} data not calculated. Run the appropriate calculation method first.")
-        elif isinstance(y_data, dict) and all(v is None for v in y_data.values()):
-            raise ValueError(f"{type} data not calculated. Run the appropriate calculation method first.")
 
         # Select indices and labels for fixed_by
         if fixed_by == "temperature":
@@ -1026,9 +1016,7 @@ class System:
 
             # Plot open circle for the last point of second order
             last_valid_index = np.where(~np.isnan(y_data))[0][-1] if np.any(~np.isnan(y_data)) else None
-            fig.add_trace(
-                go.Scatter(x=[x_data[last_valid_index]], y=[y_data[last_valid_index]], mode="markers", marker=dict(color="red", size=20, symbol="circle-open"), name="Critical Point", showlegend=False)
-            )
+            fig.add_trace(go.Scatter(x=[x_data[last_valid_index]], y=[y_data[last_valid_index]], mode="markers", marker=dict(color="red", size=20, symbol="circle-open"), name="Critical Point", showlegend=False))
         else:
             if fixed_by == "temperature":
                 for i, val in zip(indices, legend_vals):
