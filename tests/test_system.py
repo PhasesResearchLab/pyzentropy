@@ -445,7 +445,7 @@ def test_plot_vt_missing_data(plot_type, attr):
     system = System(local_config_data)
     if plot_type != "vt_phase_diagram":
         setattr(system, attr, None)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=re.escape(f"{plot_type} data not calculated. Run the appropriate calculation method first.")):
         system.plot_vt(plot_type)
 
 

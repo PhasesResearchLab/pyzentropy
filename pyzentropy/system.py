@@ -592,7 +592,7 @@ class System:
         """
         return [np.argmin(np.abs(values - target)) for target in targets]
 
-    # TODO: write tests for vt diagram
+
     def plot_vt(
         self,
         type: str,
