@@ -34,3 +34,9 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Conda environments
+.conda/
+
+# Egg-info metadata
+pyzentropy.egg-info/
