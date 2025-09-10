@@ -70,7 +70,7 @@ class Configuration:
             (entropies, "entropies"),
             (heat_capacities, "heat_capacities"),
         ]:
-            if arr.shape != expected_shape:
+            if arr is not None and arr.shape != expected_shape:
                 raise ValueError(
                     f"{arr_name} must have shape {expected_shape} (n_temperatures, n_volumes), "
                     f"where n_temperatures = len(temperatures) = {len(temperatures)} and "
