@@ -21,3 +21,13 @@ Or clone a specific branch:
 
     cd pyzentropy
     python -m pip install -e .
+
+## Example notebooks
+You can check out the example notebooks in examples/codespace in codespace:
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/nhew1994/pyzentropy?quickstart=1)
+
+| Notebooks    | Description |
+|--------------|-------------|
+| Fe<sub>3</sub>Pt | Example of applying zentropy to the 3 lowest energy configurations in Fe<sub>3</sub>Pt 12-atom supercell. The Helmholtz energies were calculated using the energy–volume curves and the Debye–Grüneisen model. |
+
