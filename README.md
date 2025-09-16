@@ -25,7 +25,7 @@ Or clone a specific branch:
 ## Example notebooks
 You can check out the example notebooks in examples/codespace in codespace:
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/nhew1994/pyzentropy?quickstart=1)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/PhasesResearchLab/pyzentropy?quickstart=1)
 
 | Notebooks    | Description |
 |--------------|-------------|
