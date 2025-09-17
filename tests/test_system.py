@@ -75,6 +75,7 @@ def test_system_inconsistent_temperatures():
 
 # Load Test Data
 # Contains config_0, config_28, and config_22 using Nigel's EV and Shang's Debye using his MATLAB code
+# TODO: Consider using the same configuration objects as the Fe3Pt tutorial
 test_data_path = os.path.join(os.path.dirname(__file__), "test_data", "test_configs.pkl")
 with open(test_data_path, "rb") as f:
     config_data = pickle.load(f)
@@ -335,12 +336,11 @@ def test_calculate_phase_diagrams():
     system = make_system(local_config_data, reference_helmholtz_energies)
     system.calculate_phase_diagrams(ground_state="config_0")
     # Test values against expected results
+    assert np.allclose(system.pt_phase_diagram["first_order"]["P"], expected_results.pt_phase_diagram["first_order"]["P"])
+    assert np.allclose(system.pt_phase_diagram["first_order"]["T"], expected_results.pt_phase_diagram["first_order"]["T"])
     assert np.allclose(system.pt_phase_diagram["second_order"]["P"], expected_results.pt_phase_diagram["second_order"]["P"])
-    assert np.allclose(
-        system.pt_phase_diagram["second_order"]["T"],
-        expected_results.pt_phase_diagram["second_order"]["T"],
-        equal_nan=True,
-    )
+    assert np.allclose(system.pt_phase_diagram["second_order"]["T"], expected_results.pt_phase_diagram["second_order"]["T"])
+
     assert np.allclose(system.vt_phase_diagram["first_order"]["V_left"], expected_results.vt_phase_diagram["first_order"]["V_left"])
     assert np.allclose(system.vt_phase_diagram["first_order"]["V_right"], expected_results.vt_phase_diagram["first_order"]["V_right"])
     assert np.allclose(system.vt_phase_diagram["first_order"]["T"], expected_results.vt_phase_diagram["first_order"]["T"])
@@ -490,7 +490,19 @@ def test_plot_vt_selected_volumes(plot_type):
 # Plotting Tests for plot_pt
 @pytest.mark.parametrize(
     "plot_type",
-    ["helmholtz_energy_pv_vs_volume", "volume_vs_temperature", "CTE_vs_temperature", "LCTE_vs_temperature", "entropy_vs_temperature", "configurational_entropy_vs_temperature", "heat_capacity_vs_temperature", "gibbs_energy_vs_temperature", "bulk_modulus_vs_temperature", "probability_vs_temperature", "pt_phase_diagram"],
+    [
+        "helmholtz_energy_pv_vs_volume",
+        "volume_vs_temperature",
+        "CTE_vs_temperature",
+        "LCTE_vs_temperature",
+        "entropy_vs_temperature",
+        "configurational_entropy_vs_temperature",
+        "heat_capacity_vs_temperature",
+        "gibbs_energy_vs_temperature",
+        "bulk_modulus_vs_temperature",
+        "probability_vs_temperature",
+        "pt_phase_diagram",
+    ],
 )
 def test_plot_pt_smoke(plot_type):
     """Test that plot_pt runs without error for all supported plot types."""
