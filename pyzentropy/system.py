@@ -1125,7 +1125,6 @@ class System:
                     showlegend=True,
                 )
             )
-            fig.update_layout(xaxis=dict(autorange="reversed"), yaxis=dict(range=[0, max(y_data)]))
             x_label = "Pressure (GPa)"
             y_label = "Temperature (K)"
 
@@ -1140,7 +1139,7 @@ class System:
                     showlegend=True,
                 )
             )
-            fig.update_layout(xaxis=dict(autorange="reversed"), yaxis=dict(range=[0, max(y_data)]))
+            fig.update_layout(xaxis=dict(autorange="reversed"), yaxis=dict(range=[0, max(y_data['second_order'])]))
             x_label = "Pressure (GPa)"
             y_label = "Temperature (K)"
 
