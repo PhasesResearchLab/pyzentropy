@@ -23,7 +23,8 @@ Or clone a specific branch:
     python -m pip install -e .
 
 ## Example notebooks
-You can check out the example notebooks in examples/codespace in codespace:
+Click the badge below to open the project in GitHub Codespaces.  
+Then, browse the `examples/codespace` folder to explore and run the example notebooks:
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/PhasesResearchLab/pyzentropy?quickstart=1)
 
