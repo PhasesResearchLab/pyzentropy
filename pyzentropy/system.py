@@ -328,8 +328,8 @@ class System:
 
         for i in range(self._n_temps):
             volumes = self.volumes
-            derivatives = self.helmholtz_energies_dV[i, :]
             helmholtz_energies = self.helmholtz_energies[i, :]
+            helmholtz_energies_dV = self.helmholtz_energies_dV[i, :]
             configurational_entropies = (
                 self.configurational_entropies[i, :]
                 if self.configurational_entropies is not None
@@ -339,10 +339,10 @@ class System:
             bulk_moduli = self.bulk_moduli[i, :] if self.bulk_moduli is not None else np.full_like(volumes, np.nan)
 
             # Filter valid data
-            valid_helmholtz_indices = ~np.isnan(derivatives) & ~np.isnan(helmholtz_energies)
+            valid_helmholtz_indices = ~np.isnan(helmholtz_energies_dV) & ~np.isnan(helmholtz_energies)
             filtered_helmholtz_volumes = volumes[valid_helmholtz_indices]
-            filtered_derivatives = derivatives[valid_helmholtz_indices]
             filtered_helmholtz_energies = helmholtz_energies[valid_helmholtz_indices]
+            filtered_helmholtz_energies_dV = helmholtz_energies_dV[valid_helmholtz_indices]
 
             valid_entropy_indices = ~np.isnan(configurational_entropies) & ~np.isnan(entropies)
             filtered_entropy_volumes = volumes[valid_entropy_indices]
@@ -363,25 +363,51 @@ class System:
                 continue
 
             # Interpolators
-            dfdv_interpolator = PchipInterpolator(
-                filtered_helmholtz_volumes, filtered_derivatives + P_eV_per_A3, extrapolate=True
+            df_dv_plus_p_interpolator = PchipInterpolator(
+                filtered_helmholtz_volumes, filtered_helmholtz_energies_dV + P_eV_per_A3, extrapolate=True  # dF/dV + P
             )
-            helmholtz_energy_interpolator = PchipInterpolator(
+            helmholtz_energies_interpolator = PchipInterpolator(
                 filtered_helmholtz_volumes,
                 filtered_helmholtz_energies + P_eV_per_A3 * filtered_helmholtz_volumes,  # F + PV
                 extrapolate=True,
             )
 
-            # Find minimum of F + PV (root of dF/dV + P)
+            # Sample finely across the range
+            V_grid = np.linspace(filtered_helmholtz_volumes.min(), filtered_helmholtz_volumes.max(), 1000)
+            df_dv_plus_p_values = df_dv_plus_p_interpolator(V_grid)
+
+            # Find all sign changes in dF/dV + P
+            sign_changes = np.where(np.diff(np.sign(df_dv_plus_p_values)) != 0)[0]
+
+            # Find the global minimum of F + PV (root of dF/dV + P)
+            roots = []
+            energies = []
             try:
-                result = root_scalar(
-                    dfdv_interpolator,
-                    bracket=(filtered_helmholtz_volumes.min(), filtered_helmholtz_volumes.max()),
-                    method="brentq",
-                )
-                min_x = result.root
+                for i in sign_changes:
+                    bracket = (V_grid[i], V_grid[i + 1])
+                    try:
+                        result = root_scalar(df_dv_plus_p_interpolator, bracket=bracket, method="brentq")
+                        if result.converged:
+                            v = result.root
+                            g = helmholtz_energies_interpolator(v)
+                            roots.append(v)
+                            energies.append(g)
+                    except ValueError:
+                        continue
+
+                # Pick the global minimum (lowest F + PV)
+                if len(roots) > 0:
+                    min_idx = np.argmin(energies)
+                    min_x = roots[min_idx]
+                    min_G = energies[min_idx]
+                else:
+                    min_x = np.nan
+                    min_G = np.nan
+                print(roots)
+                # Store results
                 V0_array.append(min_x)
-                G0_array.append(helmholtz_energy_interpolator(min_x))
+                G0_array.append(min_G)
+                
             except ValueError as e:
                 V0_array.append(np.nan)
                 G0_array.append(np.nan)
@@ -389,16 +415,16 @@ class System:
                 S0_array.append(np.nan)
                 B0_array.append(np.nan)
                 continue
-
+ 
             # Interpolate entropy at V0
             if len(filtered_entropy_volumes) >= 5:
                 try:
                     Sconf_interp = PchipInterpolator(
                         filtered_entropy_volumes, filtered_configurational_entropies, extrapolate=True
                     )
-                    S0_interp = PchipInterpolator(filtered_entropy_volumes, filtered_entropies, extrapolate=True)
+                    S_interp = PchipInterpolator(filtered_entropy_volumes, filtered_entropies, extrapolate=True)
                     Sconf_array.append(Sconf_interp(min_x))
-                    S0_array.append(S0_interp(min_x))
+                    S0_array.append(S_interp(min_x))
                 except Exception:
                     Sconf_array.append(np.nan)
                     S0_array.append(np.nan)
@@ -409,8 +435,8 @@ class System:
             # Interpolate bulk modulus at V0
             if len(filtered_bulk_volumes) >= 5:
                 try:
-                    B0_interp = PchipInterpolator(filtered_bulk_volumes, filtered_bulk_moduli, extrapolate=True)
-                    B0_array.append(B0_interp(min_x))
+                    B_interp = PchipInterpolator(filtered_bulk_volumes, filtered_bulk_moduli, extrapolate=True)
+                    B0_array.append(B_interp(min_x))
                 except Exception:
                     B0_array.append(np.nan)
             else:
