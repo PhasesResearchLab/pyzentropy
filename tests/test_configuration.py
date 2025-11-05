@@ -35,17 +35,17 @@ def test_configuration_shape_check():
 
 
 # Load test data once for all tests
-# Contains config_0, config_28, and config_22 using Nigel's EV and Shang's Debye using his MATLAB code
+# Contains FM, SF28, and SF22 using DFTTK EV and Debye
 test_data_path = os.path.join(os.path.dirname(__file__), "test_data", "test_configs.pkl")
 with open(test_data_path, "rb") as f:
     config_data = pickle.load(f)
 
 
-@pytest.mark.parametrize("config_key", ["config_0", "config_28"])
+@pytest.mark.parametrize("config_key", ["FM", "SF28"])
 def test_configuration_param(config_key):
     """Test Configuration internal energy and partition function calculations."""
     config = config_data[config_key]
-    reference_helmholtz_energies = config_data["config_0"].helmholtz_energies
+    reference_helmholtz_energies = config_data["FM"].helmholtz_energies
     instance = Configuration(
         name=config.name,
         multiplicity=config.multiplicity,
@@ -66,7 +66,7 @@ def test_configuration_param(config_key):
 
 def test_configuration_plot_smoke():
     """Smoke test: Ensure all plot types run without error."""
-    config = config_data["config_0"]
+    config = config_data["FM"]
     plot_types = [
         "helmholtz_energy_vs_volume",
         "helmholtz_energy_vs_temperature",

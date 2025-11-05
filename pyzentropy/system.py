@@ -403,7 +403,7 @@ class System:
                 else:
                     min_x = np.nan
                     min_G = np.nan
-                print(roots)
+
                 # Store results
                 V0_array.append(min_x)
                 G0_array.append(min_G)
@@ -538,8 +538,8 @@ class System:
         while True:
             try:
                 self.calculate_pressure_properties(P)
-                gs_probabilities = self.configurations[ground_state].probabilities_at_P[f"{P:.2f}_GPa"]
-                V0 = self.pt_properties[f"{P:.2f}_GPa"]["V0"]
+                gs_probabilities = self.configurations[ground_state].probabilities_at_P[f"{P:.2f}_GPa"]  # probabilities vs T
+                V0 = self.pt_properties[f"{P:.2f}_GPa"]["V0"]  # V0 vs T
 
                 # Create interpolators for smooth curves
                 interp_probabilities = PchipInterpolator(self.temperatures, gs_probabilities)
@@ -584,34 +584,28 @@ class System:
             except Exception:
                 # If we hit an error (e.g., no crossing found), we stop the loop
                 break
-
+                
         # Find first order phase transition points (miscibility gap) using the common tangent method
         for index, temperature in enumerate(self.temperatures):
-            V0 = self.pt_properties[f"{0.0:.2f}_GPa"]["V0"][
-                index
-            ]  # Only consider 0 GPa for miscibility gap for T-V diagram
-            min_V0 = 0.9 * V0  # Set a threshold for minimum V0
-            max_V0 = 1.1 * V0  # Set a threshold for maximum V0
-
-            # Find roots where d^2F/dV^2 = 0 between min_V0 and max_V0
-            filtered_indices = np.where((self.volumes >= min_V0) & (self.volumes <= max_V0))[0]
-            filtered_volumes = self.volumes[filtered_indices]
-            filtered_helmholtz_energies_dV = self.helmholtz_energies_dV[index, filtered_indices]
-            filtered_helmholtz_energies_d2V2 = self.helmholtz_energies_d2V2[index, filtered_indices]
+            # Only consider 0 GPa for miscibility gap for T-V diagram
+            # Current method can only handle one common tangent
+            
+            helmholtz_energies_dV = self.helmholtz_energies_dV[index, :]
+            helmholtz_energies_d2V2 = self.helmholtz_energies_d2V2[index, :]
 
             # Interpolators for dF/dV and d^2F/dV^2
-            d2V2_interpolator = PchipInterpolator(filtered_volumes, filtered_helmholtz_energies_d2V2)
-            dV_interpolator = PchipInterpolator(filtered_volumes, filtered_helmholtz_energies_dV)
+            dV_interpolator = PchipInterpolator(self.volumes, helmholtz_energies_dV)
+            d2V2_interpolator = PchipInterpolator(self.volumes, helmholtz_energies_d2V2)
 
             # Find sign changes in d^2F/dV^2 (roots)
             roots = []
-            for i in range(len(filtered_volumes) - 1):
+            for i in range(len(self.volumes) - 1):
                 if (
-                    filtered_helmholtz_energies_d2V2[i] * filtered_helmholtz_energies_d2V2[i + 1]
+                    helmholtz_energies_d2V2[i] * helmholtz_energies_d2V2[i + 1]
                 ) < 0:  # True if there is a change of sign
                     res = root_scalar(
                         d2V2_interpolator,
-                        bracket=(filtered_volumes[i], filtered_volumes[i + 1]),
+                        bracket=(self.volumes[i], self.volumes[i + 1]),
                         method="brentq",
                         xtol=1e-10,
                         rtol=1e-12,
@@ -634,6 +628,7 @@ class System:
                     right_volume += volume_step_size
                     left_helmholtz_energy_dV = dV_interpolator(left_volume)
                     right_helmholtz_energy_dV = dV_interpolator(right_volume)
+                    
                 self.pt_phase_diagram["first_order"]["P"] = np.append(
                     self.pt_phase_diagram["first_order"]["P"],
                     np.round(-left_helmholtz_energy_dV * EV_PER_CUBIC_ANGSTROM_TO_GPA, 2),
@@ -661,18 +656,26 @@ class System:
         self.pt_phase_diagram["second_order"]["P"] = self.pt_phase_diagram["second_order"]["P"][mask]
         self.pt_phase_diagram["second_order"]["T"] = self.pt_phase_diagram["second_order"]["T"][mask]
 
-        # Add the last second order point to the end of first order arrays for continuity in the diagram
-        # Take this as the critical point
+        # Find the temperature of the second order that is closest to the temperature of the first order
+        beginning_second_order_T = self.vt_phase_diagram["second_order"]["T"][0]
+        end_second_order_T = self.vt_phase_diagram["second_order"]["T"][-1]
+        end_first_order_T = self.vt_phase_diagram["first_order"]["T"][-1]
+
+        # Choose index: 0 for first, -1 for last
+        if abs(beginning_second_order_T - end_first_order_T) < abs(end_second_order_T - end_first_order_T):
+            idx = 0
+        else:
+            idx = -1
+
         self.vt_phase_diagram["first_order"]["V_left"] = np.append(
-            self.vt_phase_diagram["first_order"]["V_left"], self.vt_phase_diagram["second_order"]["V"][-1]
+            self.vt_phase_diagram["first_order"]["V_left"], self.vt_phase_diagram["second_order"]["V"][idx]
         )
         self.vt_phase_diagram["first_order"]["V_right"] = np.append(
-            self.vt_phase_diagram["first_order"]["V_right"], self.vt_phase_diagram["second_order"]["V"][-1]
+            self.vt_phase_diagram["first_order"]["V_right"], self.vt_phase_diagram["second_order"]["V"][idx]
         )
         self.vt_phase_diagram["first_order"]["T"] = np.append(
-            self.vt_phase_diagram["first_order"]["T"], self.vt_phase_diagram["second_order"]["T"][-1]
+            self.vt_phase_diagram["first_order"]["T"], self.vt_phase_diagram["second_order"]["T"][idx]
         )
-
         return None
 
     def _get_closest_indices(self, values: np.ndarray, targets: np.ndarray) -> list:
@@ -894,11 +897,11 @@ class System:
                     name="2<sup>nd</sup> Order",
                 )
             )
-            # Plot open circle for the last point of second order
+            # Plot open circle for the last point of first order phase transition (critical point)
             fig.add_trace(
                 go.Scatter(
-                    x=[x_data["V_second_order"][-1]],
-                    y=[y_data["T_second_order"][-1]],
+                    x=[x_data["V_left_first_order"][-1]],
+                    y=[y_data["T_first_order"][-1]],
                     mode="markers",
                     marker=dict(color="red", size=20, symbol="circle-open"),
                     name="Critical Point",
@@ -1169,12 +1172,12 @@ class System:
             x_label = "Pressure (GPa)"
             y_label = "Temperature (K)"
 
-            # Plot open circle for the last point of second order
-            last_valid_index = np.where(y_data["second_order"])[0][-1]
+            # Plot open circle for the last point of first order phase transition (critical point)
+            last_valid_index = np.where(y_data["first_order"])[0][-1]
             fig.add_trace(
                 go.Scatter(
-                    x=[x_data["second_order"][last_valid_index]],
-                    y=[y_data["second_order"][last_valid_index]],
+                    x=[x_data["first_order"][last_valid_index]],
+                    y=[y_data["first_order"][last_valid_index]],
                     mode="markers",
                     marker=dict(color="red", size=20, symbol="circle-open"),
                     name="Critical Point",
