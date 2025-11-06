@@ -383,8 +383,8 @@ class System:
             roots = []
             energies = []
             try:
-                for i in sign_changes:
-                    bracket = (V_grid[i], V_grid[i + 1])
+                for sign_idx in sign_changes:
+                    bracket = (V_grid[sign_idx], V_grid[sign_idx + 1])
                     try:
                         result = root_scalar(df_dv_plus_p_interpolator, bracket=bracket, method="brentq")
                         if result.converged:
