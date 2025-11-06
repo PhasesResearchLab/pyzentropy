@@ -415,7 +415,6 @@ class System:
                 S0_array.append(np.nan)
                 B0_array.append(np.nan)
                 continue
- 
             # Interpolate entropy at V0
             if len(filtered_entropy_volumes) >= 5:
                 try:
