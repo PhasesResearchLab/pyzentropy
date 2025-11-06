@@ -502,7 +502,7 @@ def test_plot_vt_selected_volumes(plot_type):
         "probability_vs_temperature",
         "pt_phase_diagram",
     ],
-) 
+)
 def test_plot_pt_smoke(plot_type):
     """Test that plot_pt runs without error for all supported plot types."""
     local_config_data = copy.deepcopy(config_data)
