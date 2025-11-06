@@ -400,7 +400,7 @@ def test_calculate_phase_diagrams():
         "bulk_modulus_vs_temperature",
         "vt_phase_diagram",
     ],
-)  
+)
 def test_plot_vt_smoke(plot_type):
     """Test that plot_vt runs without error for all supported plot types."""
     local_config_data = copy.deepcopy(config_data)
