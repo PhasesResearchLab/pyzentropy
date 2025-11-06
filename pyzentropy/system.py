@@ -584,7 +584,6 @@ class System:
             except Exception:
                 # If we hit an error (e.g., no crossing found), we stop the loop
                 break
-                
         # Find first order phase transition points (miscibility gap) using the common tangent method
         for index, temperature in enumerate(self.temperatures):
             # Only consider 0 GPa for miscibility gap for T-V diagram
