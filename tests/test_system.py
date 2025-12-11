@@ -74,8 +74,8 @@ def test_system_inconsistent_temperatures():
 
 
 # Load Test Data
-# Contains FM, SF28, and SF22 using DFTTK EV and Debye
-test_data_path = os.path.join(os.path.dirname(__file__), "test_data", "test_configs.pkl")
+# Contains FM, SF22, and SF28 using DFTTK EV and Debye
+test_data_path = os.path.join(os.path.dirname(__file__), "test_data", "Fe3Pt_three_configs.pkl")
 with open(test_data_path, "rb") as f:
     config_data = pickle.load(f)
 reference_helmholtz_energies = config_data["FM"].helmholtz_energies
@@ -83,7 +83,7 @@ for name, config in config_data.items():
     config.calculate_internal_energies()
     config.calculate_partition_functions(reference_helmholtz_energies)
 
-expected_results_path = os.path.join(os.path.dirname(__file__), "test_data", "system_object.pkl")
+expected_results_path = os.path.join(os.path.dirname(__file__), "test_data", "Fe3Pt_system.pkl")
 with open(expected_results_path, "rb") as f:
     expected_results = pickle.load(f)
 
