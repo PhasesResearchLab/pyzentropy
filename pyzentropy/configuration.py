@@ -42,6 +42,7 @@ class Configuration:
         helmholtz_energies: np.ndarray,
         helmholtz_energies_dV: np.ndarray,
         helmholtz_energies_d2V2: np.ndarray,
+        reference_helmholtz_energies: np.ndarray,
         entropies: np.ndarray = None,
         heat_capacities: np.ndarray = None,
     ):
@@ -57,6 +58,7 @@ class Configuration:
             helmholtz_energies (np.ndarray): Helmholtz energies (shape: [n_temperatures, n_volumes]).
             helmholtz_energies_dV (np.ndarray): First derivatives of Helmholtz energies (shape: [n_temperatures, n_volumes]).
             helmholtz_energies_d2V2 (np.ndarray): Second derivatives of Helmholtz energies (shape: [n_temperatures, n_volumes]).
+            reference_helmholtz_energies (np.ndarray): Reference Helmholtz energies to shift by (shape: [n_temperatures, n_volumes])
             entropies (np.ndarray): Entropies (shape: [n_temperatures, n_volumes]). Defaults to None.
             heat_capacities (np.ndarray): Heat capacities (shape: [n_temperatures, n_volumes]). Defaults to None.
         Raises:
@@ -96,6 +98,9 @@ class Configuration:
 
         if self.entropies is not None:
             self.calculate_internal_energies()
+
+        # Always calculate partition functions using the provided reference Helmholtz energies
+        self.calculate_partition_functions(reference_helmholtz_energies)
 
     def calculate_internal_energies(self) -> None:
         """

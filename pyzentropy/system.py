@@ -16,7 +16,7 @@ BOLTZMANN_CONSTANT = scipy.constants.Boltzmann / scipy.constants.electron_volt  
 class System:
     """
     Represents a thermodynamic system composed of multiple configurations.
-    Provides methods to calculate ensemble properties, thermodynamic quantities,
+    Provides methods to calculate system thermodynamic quantities,
     and to generate various plots for analysis.
     """
 

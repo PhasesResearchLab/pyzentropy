@@ -29,6 +29,7 @@ def make_config(name, number_of_atoms=1, volumes=None, temperatures=None):
         helmholtz_energies=arr,
         helmholtz_energies_dV=arr,
         helmholtz_energies_d2V2=arr,
+        reference_helmholtz_energies=arr,
         entropies=arr,
         heat_capacities=arr,
     )

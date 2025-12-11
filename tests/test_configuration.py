@@ -35,6 +35,7 @@ def test_initialization():
             helmholtz_energies=arr_wrong,  # wrong shape here
             helmholtz_energies_dV=arr,
             helmholtz_energies_d2V2=arr,
+            reference_helmholtz_energies=arr,
             entropies=arr,
             heat_capacities=arr,
         )
@@ -54,11 +55,11 @@ def test_configuration_param(config_key):
         helmholtz_energies=config.helmholtz_energies,
         helmholtz_energies_dV=config.helmholtz_energies_dV,
         helmholtz_energies_d2V2=config.helmholtz_energies_d2V2,
+        reference_helmholtz_energies=reference_helmholtz_energies,
         entropies=config.entropies,
         heat_capacities=config.heat_capacities,
     )
     assert np.allclose(instance.internal_energies, config.internal_energies)
-    instance.calculate_partition_functions(reference_helmholtz_energies)
     assert np.allclose(instance.partition_functions, config.partition_functions, equal_nan=True)
 
     # Test invalid reference_helmholtz_energies shape raises ValueError
