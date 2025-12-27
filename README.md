@@ -5,6 +5,7 @@
 <p align="center">
     <img src="docs/_static/latest_pyzentropy.drawio.png" alt="DFTTK Logo">
 </p>
+
 ## Installation
 It is recommended to first set up a virtual environment using Conda:
 
