@@ -1,7 +1,10 @@
+
+# pyzentropy
 [![Testing](https://github.com/nhew1994/pyzentropy/actions/workflows/test.yml/badge.svg)](https://github.com/nhew1994/pyzentropy/actions/workflows/test.yml)
 
-# PyZentropy
-
+<p align="center">
+    <img src="docs/_static/latest_pyzentropy.drawio.png" alt="DFTTK Logo">
+</p>
 ## Installation
 It is recommended to first set up a virtual environment using Conda:
 
