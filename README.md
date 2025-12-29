@@ -1,6 +1,6 @@
 
 <p align="center">
-    <img src="docs/_static/latest_pyzentropy.drawio.png" alt="DFTTK Logo">
+    <img src="docs/latest_pyzentropy.drawio.png" alt="pyzentropy Logo">
 </p>
 
 # pyzentropy
