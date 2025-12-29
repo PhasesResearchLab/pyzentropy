@@ -3,7 +3,6 @@
     <img src="docs/latest_pyzentropy.drawio.png" alt="pyzentropy Logo">
 </p>
 
-# pyzentropy
 [![Testing](https://github.com/nhew1994/pyzentropy/actions/workflows/test.yml/badge.svg)](https://github.com/nhew1994/pyzentropy/actions/workflows/test.yml)
 
 ## Installation
