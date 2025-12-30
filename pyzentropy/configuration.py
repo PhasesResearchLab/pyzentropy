@@ -42,7 +42,6 @@ class Configuration:
         helmholtz_energies: np.ndarray,
         helmholtz_energies_dV: np.ndarray,
         helmholtz_energies_d2V2: np.ndarray,
-        reference_helmholtz_energies: np.ndarray,
         entropies: np.ndarray = None,
         heat_capacities: np.ndarray = None,
     ):
@@ -58,9 +57,9 @@ class Configuration:
             helmholtz_energies (np.ndarray): Helmholtz energies (shape: [n_temperatures, n_volumes]).
             helmholtz_energies_dV (np.ndarray): First derivatives of Helmholtz energies (shape: [n_temperatures, n_volumes]).
             helmholtz_energies_d2V2 (np.ndarray): Second derivatives of Helmholtz energies (shape: [n_temperatures, n_volumes]).
-            reference_helmholtz_energies (np.ndarray): Reference Helmholtz energies to shift by (shape: [n_temperatures, n_volumes])
             entropies (np.ndarray): Entropies (shape: [n_temperatures, n_volumes]). Defaults to None.
             heat_capacities (np.ndarray): Heat capacities (shape: [n_temperatures, n_volumes]). Defaults to None.
+
         Raises:
             ValueError: If any input array does not match the expected shape.
         """
@@ -99,38 +98,11 @@ class Configuration:
         if self.entropies is not None:
             self.calculate_internal_energies()
 
-        # Always calculate partition functions using the provided reference Helmholtz energies
-        self.calculate_partition_functions(reference_helmholtz_energies)
-
     def calculate_internal_energies(self) -> None:
         """
         Calculate internal energies using the formula: E = F + T*S.
         """
         self.internal_energies = self.helmholtz_energies + self.temperatures[:, np.newaxis] * self.entropies
-
-    def calculate_partition_functions(self, reference_helmholtz_energies: np.ndarray) -> None:
-        """
-        Calculate the partition function for each state, using a reference Helmholtz energy using the formula: Z = exp(-(F - F_ref) / (k_B * T)).
-
-        Args:
-            reference_helmholtz_energies (np.ndarray): Reference Helmholtz energies to shift by (shape: [n_temperatures, n_volumes])
-
-        Raises:
-            ValueError: If reference_helmholtz_energies does not match the expected shape.
-        """
-
-        if reference_helmholtz_energies.shape != (len(self.temperatures), len(self.volumes)):
-            raise ValueError(
-                f"reference_helmholtz_energies must have shape {(len(self.temperatures), len(self.volumes))} "
-                f"Received array with shape {reference_helmholtz_energies.shape}."
-            )
-
-        helmholtz_energy_shifted = self.helmholtz_energies - reference_helmholtz_energies
-        exponent = -helmholtz_energy_shifted / (BOLTZMANN_CONSTANT * self.temperatures[:, np.newaxis])
-        with np.errstate(over="ignore"):
-            partition_functions = np.exp(exponent)
-        partition_functions[np.isinf(partition_functions)] = np.nan
-        self.partition_functions = partition_functions
 
     def plot_vt(
         self,

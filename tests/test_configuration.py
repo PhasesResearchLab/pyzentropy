@@ -35,7 +35,6 @@ def test_initialization():
             helmholtz_energies=arr_wrong,  # wrong shape here
             helmholtz_energies_dV=arr,
             helmholtz_energies_d2V2=arr,
-            reference_helmholtz_energies=arr,
             entropies=arr,
             heat_capacities=arr,
         )
@@ -45,7 +44,6 @@ def test_initialization():
 def test_configuration_param(config_key):
     # Test Configuration internal energy and partition function calculations.
     config = config_data[config_key]
-    reference_helmholtz_energies = config_data["FM"].helmholtz_energies
     instance = Configuration(
         name=config.name,
         multiplicity=config.multiplicity,
@@ -55,20 +53,10 @@ def test_configuration_param(config_key):
         helmholtz_energies=config.helmholtz_energies,
         helmholtz_energies_dV=config.helmholtz_energies_dV,
         helmholtz_energies_d2V2=config.helmholtz_energies_d2V2,
-        reference_helmholtz_energies=reference_helmholtz_energies,
         entropies=config.entropies,
         heat_capacities=config.heat_capacities,
     )
     assert np.allclose(instance.internal_energies, config.internal_energies)
-    assert np.allclose(instance.partition_functions, config.partition_functions, equal_nan=True)
-
-    # Test invalid reference_helmholtz_energies shape raises ValueError
-    wrong_shape_ref = np.zeros((len(instance.temperatures) - 1, len(instance.volumes)))
-    with pytest.raises(
-        ValueError,
-        match=rf"reference_helmholtz_energies must have shape \({len(instance.temperatures)}, {len(instance.volumes)}\) Received array with shape \({wrong_shape_ref.shape[0]}, {wrong_shape_ref.shape[1]}\)\.",
-    ):
-        instance.calculate_partition_functions(wrong_shape_ref)
 
 
 def test_plot_vt():
