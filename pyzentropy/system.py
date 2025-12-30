@@ -21,6 +21,7 @@ class System:
 
     Attributes:
         configurations (dict[str, Configuration]): Dictionary mapping configuration names to Configuration objects.
+        ground_state (str): Name of the ground state configuration.
         number_of_atoms (int): Number of atoms in the system.
         temperatures (np.ndarray): Array of temperatures considered (shape: [n_temperatures]).
         volumes (np.ndarray): Array of volumes considered (shape: [n_volumes]).
@@ -28,6 +29,7 @@ class System:
         helmholtz_energies (np.ndarray): Helmholtz energies for the system (shape: [n_temperatures, n_volumes]).
         helmholtz_energies_dV (np.ndarray): First derivative of Helmholtz energies with respect to volume (shape: [n_temperatures, n_volumes]).
         helmholtz_energies_d2V2 (np.ndarray): Second derivative of Helmholtz energies with respect to volume (shape: [n_temperatures, n_volumes]).
+        ground_state_helmholtz_energies (np.ndarray): Helmholtz energies of the ground state configuration (shape: [n_temperatures, n_volumes]).
         entropies (np.ndarray): Total entropies for the system (shape: [n_temperatures, n_volumes]).
         configurational_entropies (np.ndarray): Configurational entropies for the system (shape: [n_temperatures, n_volumes]).
         bulk_moduli (np.ndarray): Bulk moduli for the system (shape: [n_temperatures, n_volumes]).
@@ -37,25 +39,28 @@ class System:
         vt_phase_diagram (dict): Volume-temperature phase diagram data.
     """
 
-    def __init__(self, configurations: dict[str, Configuration], reference_helmholtz_energies: np.ndarray):
+    def __init__(self, configurations: dict[str, Configuration], ground_state: str) -> None:
         """
         Initialize the System with a dictionary of Configuration objects.
 
         Args:
             configurations (dict[str, Configuration]): Dictionary mapping configuration names to Configuration objects.
-            reference_helmholtz_energies (np.ndarray): Reference Helmholtz energies to shift by (shape: [n_temperatures, n_volumes])
-            when calculating system Helmholtz energies.
+            ground_state (str): Name of the ground state configuration.
 
         Raises:
             ValueError: If configurations have inconsistent number of atoms, volumes, or temperatures.
         """
         self.configurations = configurations
+        self.ground_state = ground_state
 
-        # Get reference values from the first configuration
-        first_config = next(iter(configurations.values()))
-        ref_num_atoms = first_config.number_of_atoms
-        ref_volumes = first_config.volumes
-        ref_temperatures = first_config.temperatures
+        # Get reference values from the ground state configuration
+        ground_state = next(config for name, config in configurations.items() if config.name == self.ground_state)
+
+        ref_num_atoms = ground_state.number_of_atoms
+        ref_volumes = ground_state.volumes
+        ref_temperatures = ground_state.temperatures
+        self.ground_state = ground_state.name
+        self.ground_state_helmholtz_energies = ground_state.helmholtz_energies
 
         # Ensure all configurations are consistent in number of atoms, temperatures, and volumes
         for name, config in configurations.items():
@@ -65,10 +70,6 @@ class System:
                 raise ValueError("Volumes for configurations are not the same.")
             if not np.array_equal(config.temperatures, ref_temperatures):
                 raise ValueError("Temperatures for configurations are not the same.")
-
-        # Ensure that reference_helmholtz_energies has the correct shape
-        if reference_helmholtz_energies.shape != (len(ref_temperatures), len(ref_volumes)):
-            raise ValueError("reference_helmholtz_energies must have shape (n_temperatures, n_volumes).")
 
         self.number_of_atoms = ref_num_atoms
         self.temperatures = ref_temperatures
@@ -104,28 +105,54 @@ class System:
         # Perform initial calculations
         self.calculate_partition_functions()
         self.calculate_probabilities()
-        self.calculate_helmholtz_energies(reference_helmholtz_energies)
+        self.calculate_helmholtz_energies(self.ground_state_helmholtz_energies)
         self.calculate_bulk_moduli()
         self.calculate_entropies()
         self.calculate_heat_capacities()
 
     def calculate_partition_functions(self) -> None:
         """
+        Calculate the partition function for each configuration, using a reference ground state
+        Helmholtz energy using the formula: Zk = exp(-(Fk - Fk_ref) / (k_B * T)).
         Calculate the total partition function for the system by summing over all configurations.
-        Each configuration's partition function is weighted by its multiplicity.
-
-        Raises:
-            ValueError: If any configuration is missing its partition function.
+        Each configuration's partition function is weighted by its multiplicity, Z = Σk mk * Zk.
         """
+
+        # Initialize config partition functions
+        for config in self.configurations.values():
+            config.partition_functions = np.zeros((self._n_temps, self._n_vols))
+
+        # Handle T = 0 K case
+        # Stack all F(0K) arrays: shape (n_configs, n_vols)
+        F_0K_all = np.array([config.helmholtz_energies[0, :] for config in self.configurations.values()])
+        min_F_0K = np.min(F_0K_all, axis=0)  # shape: (n_vols,)
+
+        for config_idx, config in enumerate(self.configurations.values()):
+            # For each volume, set Z=1 if F is minimal, else 0
+            is_min = np.isclose(config.helmholtz_energies[0, :], min_F_0K)
+            config.partition_functions[0, :] = is_min.astype(float)
+
+        # Handle T > 0 K case
+        for config in self.configurations.values():
+            # Calculate partition function for T > 0 K
+            with np.errstate(over="ignore", divide="ignore", invalid="ignore"):
+                for t_idx, temperature in enumerate(self.temperatures):
+                    if temperature == 0:
+                        continue  # Skip T = 0 K, already handled
+                    exponent = -(
+                        config.helmholtz_energies[t_idx, :] - self.ground_state_helmholtz_energies[t_idx, :]
+                    ) / (BOLTZMANN_CONSTANT * temperature)
+                    with np.errstate(over="ignore"):
+                        config.partition_functions[t_idx, :] = np.exp(exponent)
+            # Replace inf values with nan
+            config.partition_functions[np.isinf(config.partition_functions)] = np.nan
+
         # Initialize partition functions array
         partition_functions = np.zeros((self._n_temps, self._n_vols))
 
         # Check that the partition functions are calculated for each configuration
-        with np.errstate(invalid="ignore", over="ignore"):
-            for config in self.configurations.values():
-                if config.partition_functions is None:
-                    raise ValueError(f"partition_functions not set for configuration '{config.name}'.")
-                partition_functions += config.partition_functions * config.multiplicity
+        for config in self.configurations.values():
+            partition_functions += config.partition_functions * config.multiplicity
 
             # Replace inf values with nan
             partition_functions[np.isinf(partition_functions)] = np.nan
@@ -149,12 +176,12 @@ class System:
                 probabilities = config.multiplicity * config.partition_functions / self.partition_functions
                 config.probabilities = probabilities
 
-    def calculate_helmholtz_energies(self, reference_helmholtz_energies: np.ndarray) -> None:
+    def calculate_helmholtz_energies(self, ground_state_helmholtz_energies: np.ndarray) -> None:
         """
         Calculate the Helmholtz energy for the system at each temperature and volume.
 
         Args:
-            reference_helmholtz_energies (np.ndarray): Reference Helmholtz energies to shift the calculated values.
+            ground_state_helmholtz_energies (np.ndarray): Reference Helmholtz energies to shift the calculated values.
 
         Raises:
             ValueError: If the system partition function is not calculated.
@@ -163,11 +190,26 @@ class System:
         if self.partition_functions is None:
             raise ValueError("Partition functions not calculated. Call calculate_partition_functions() first.")
 
+        # Initialize Helmholtz energies array
+        self.helmholtz_energies = np.zeros((self._n_temps, self._n_vols))
+
         # Calculate Helmholtz energies
-        self.helmholtz_energies = (
-            -BOLTZMANN_CONSTANT * self.temperatures[:, np.newaxis] * np.log(self.partition_functions)
-            + reference_helmholtz_energies
-        )
+        # If T = 0 K
+        if self.temperatures[0] == 0:
+            for config in self.configurations.values():
+                self.helmholtz_energies[0, :] += config.probabilities[0, :] * config.helmholtz_energies[0, :]
+
+            self.helmholtz_energies[1:, :] = (
+                -BOLTZMANN_CONSTANT * self.temperatures[1:, np.newaxis] * np.log(self.partition_functions[1:, :])
+                + ground_state_helmholtz_energies[1:, :]
+            )
+
+        # For T > 0 K and no T = 0 K
+        else:
+            self.helmholtz_energies = (
+                -BOLTZMANN_CONSTANT * self.temperatures[:, np.newaxis] * np.log(self.partition_functions)
+                + ground_state_helmholtz_energies
+            )
 
         # Calculate derivatives automatically
         self.calculate_helmholtz_energies_dV()
@@ -203,29 +245,38 @@ class System:
         Raises:
             ValueError: If probabilities, dF/dV, or d2F/dV2 are missing for any configuration.
         """
+        # Check that the probabilities, dF/dV, and d2F/dV2 are calculated for each configuration
+        for config in self.configurations.values():
+            if config.probabilities is None:
+                raise ValueError(
+                    f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first."
+                )
+            if config.helmholtz_energies_dV is None:
+                raise ValueError(f"helmholtz_energies_dV not set for configuration '{config.name}'.")
+            if config.helmholtz_energies_d2V2 is None:
+                raise ValueError(f"helmholtz_energies_d2V2 not set for configuration '{config.name}'.")
 
         # Initialize array
         self.helmholtz_energies_d2V2 = np.zeros((self._n_temps, self._n_vols))
 
         # Loop over temperatures
-        for i in range(self._n_temps):
+        for i, temperature in enumerate(self.temperatures):
+            # At T = 0 K, set to ground state d2F/dV2
+            if temperature == 0:
+                for config in self.configurations.values():
+                    self.helmholtz_energies_d2V2[i, :] += (
+                        config.probabilities[i, :] * config.helmholtz_energies_d2V2[i, :]
+                    )
+                continue
 
+            # For T > 0 K
             # Initialize averages
             d2F_dV2_avg = np.zeros(self._n_vols)
             dF_dV_avg = np.zeros(self._n_vols)
             dF_dV_sq_avg = np.zeros(self._n_vols)
 
-            # Check that the probabilities, dF/dV, and d2F/dV2 are calculated for each configuration
+            # Accumulate contributions from each configuration
             for config in self.configurations.values():
-                if config.probabilities is None:
-                    raise ValueError(
-                        f"Probabilities not set for configuration '{config.name}'. Call calculate_probabilities() first."
-                    )
-                if config.helmholtz_energies_dV is None:
-                    raise ValueError(f"helmholtz_energies_dV not set for configuration '{config.name}'.")
-                if config.helmholtz_energies_d2V2 is None:
-                    raise ValueError(f"helmholtz_energies_d2V2 not set for configuration '{config.name}'.")
-
                 pk = config.probabilities[i]
                 dF_dV = config.helmholtz_energies_dV[i]
                 dF_dV_avg += pk * dF_dV
@@ -256,11 +307,7 @@ class System:
         Raises:
             ValueError: If probabilities or entropies are missing for any configuration.
         """
-        # Initialize arrays
-        self.configurational_entropies = np.zeros((self._n_temps, self._n_vols))
-        intra_configurational_entropies = np.zeros((self._n_temps, self._n_vols))
-        self.entropies = np.zeros((self._n_temps, self._n_vols))
-
+        # Check that probabilities and entropies are calculated for each configuration
         for config in self.configurations.values():
             if config.probabilities is None:
                 raise ValueError(
@@ -269,13 +316,29 @@ class System:
             if config.entropies is None:
                 raise ValueError(f"Entropies not set for configuration '{config.name}'.")
 
-            multiplicity = config.multiplicity
-            pk = config.probabilities
-            self.configurational_entropies += (
-                -BOLTZMANN_CONSTANT * multiplicity * (pk / multiplicity) * np.log(pk / multiplicity)
-            )
-            intra_configurational_entropies += pk * config.entropies
-        self.entropies = self.configurational_entropies + intra_configurational_entropies
+        # Initialize arrays
+        self.configurational_entropies = np.zeros((self._n_temps, self._n_vols))
+        intra_configurational_entropies = np.zeros((self._n_temps, self._n_vols))
+        self.entropies = np.zeros((self._n_temps, self._n_vols))
+
+        for i, temperature in enumerate(self.temperatures):
+            # For T = 0 K, set entropy to the ground state
+            if temperature == 0:
+                for config in self.configurations.values():
+                    self.entropies[i] += config.probabilities[i, :] * config.entropies[i, :]
+                continue
+
+            # For T > 0 K
+            for config in self.configurations.values():
+                multiplicity = config.multiplicity
+                pk = config.probabilities[i]
+                entropies = config.entropies[i]
+
+                self.configurational_entropies[i] += (
+                    -BOLTZMANN_CONSTANT * multiplicity * (pk / multiplicity) * np.log(pk / multiplicity)
+                )
+                intra_configurational_entropies[i] += pk * entropies
+            self.entropies[i] = self.configurational_entropies[i] + intra_configurational_entropies[i]
 
     def calculate_heat_capacities(self) -> None:
         """
@@ -284,12 +347,6 @@ class System:
         Raises:
             ValueError: If probabilities, heat capacities, or internal energies are missing for any configuration.
         """
-        # Initialize terms
-        Cv_avg = np.zeros((self._n_temps, self._n_vols))
-        E_sq_avg = np.zeros((self._n_temps, self._n_vols))
-        E_avg = np.zeros((self._n_temps, self._n_vols))
-        factor = 1 / (BOLTZMANN_CONSTANT * self.temperatures[:, np.newaxis] ** 2)
-
         # Check that the probabilities, heat capacities, and internal energies are calculated for each configuration
         for config in self.configurations.values():
             if config.probabilities is None:
@@ -301,13 +358,34 @@ class System:
             if config.internal_energies is None:
                 raise ValueError(f"Internal energies not set for configuration '{config.name}'.")
 
-            # Accumulate contributions from each configuration
-            Cv_avg += config.probabilities * config.heat_capacities
-            E_sq_avg += config.probabilities * config.internal_energies**2
-            E_avg += config.probabilities * config.internal_energies
+        # Initialize terms
+        self.heat_capacities = np.zeros((self._n_temps, self._n_vols))
+        Cv_avg = np.zeros((self._n_temps, self._n_vols))
+        E_sq_avg = np.zeros((self._n_temps, self._n_vols))
+        E_avg = np.zeros((self._n_temps, self._n_vols))
+        factor = np.zeros((self._n_temps, 1))
+        if self.temperatures[0] == 0:
+            factor[0] = 0
+            factor[1:] = 1 / (BOLTZMANN_CONSTANT * self.temperatures[1:, np.newaxis] ** 2)
+        else:
+            factor = 1 / (BOLTZMANN_CONSTANT * self.temperatures[:, np.newaxis] ** 2)
 
-        # Final heat capacity calculation
-        self.heat_capacities = Cv_avg + factor * (E_sq_avg - E_avg**2)
+        for i, temperature in enumerate(self.temperatures):
+            # For T = 0 K, set entropy to the ground state
+            if temperature == 0:
+                for config in self.configurations.values():
+                    self.heat_capacities[i, :] += config.probabilities[i, :] * config.heat_capacities[i, :]
+                continue
+
+            # For T > 0 K
+            for config in self.configurations.values():
+                # Accumulate contributions from each configuration
+                Cv_avg[i] += config.probabilities[i] * config.heat_capacities[i]
+                E_sq_avg[i] += config.probabilities[i] * config.internal_energies[i] ** 2
+                E_avg[i] += config.probabilities[i] * config.internal_energies[i]
+
+            # Final heat capacity calculation
+            self.heat_capacities[i] = Cv_avg[i] + factor[i] * (E_sq_avg[i] - E_avg[i] ** 2)
 
     def calculate_pressure_properties(self, P: float) -> None:
         """
@@ -510,27 +588,20 @@ class System:
             dS_dT = np.diff(self.pt_properties[f"{P:.2f}_GPa"]["S0"]) / np.diff(self.temperatures)
             self.pt_properties[f"{P:.2f}_GPa"]["Cp"] = self.temperatures[:-1] * dS_dT
 
-    def calculate_phase_diagrams(
-        self, ground_state: str, dP: float = 0.2, volume_step_size: float = 1e-4, atol: float = 1e-6
-    ) -> None:
+    def calculate_phase_diagrams(self, dP: float = 0.2, volume_step_size: float = 1e-4, atol: float = 1e-6) -> None:
         """
         Calculate pressure-temperature and volume-temperature phase diagrams for the system.
 
         Args:
-            ground_state (str): Name of the ground state configuration.
             dP (float): Pressure increment in GPa. Default is 0.2 GPa.
             volume_step_size (float): Step size for volume when searching for the miscibility gap. Default is 1e-4.
             atol (float): Absolute tolerance for convergence in the common tangent search. Default is 1e-6.
 
         Raises:
-            ValueError: If any of the Helmholtz energies or their derivatives are not calculated,
+            ValueError: If any of the Helmholtz energies or their first derivatives are not calculated,
                 or if probabilities for any configuration are not calculated.
         """
-
-        if self.helmholtz_energies_d2V2 is None:
-            raise ValueError(
-                "Helmholtz energies second derivative not calculated. Call calculate_helmholtz_energies_d2V2() first."
-            )
+        # Raise errors if required attributes are missing
         if self.helmholtz_energies_dV is None:
             raise ValueError(
                 "Helmholtz energies first derivative not calculated. Call calculate_helmholtz_energies_dV() first."
@@ -558,7 +629,7 @@ class System:
         while True:
             try:
                 self.calculate_pressure_properties(P)
-                gs_probabilities = self.configurations[ground_state].probabilities_at_P[
+                gs_probabilities = self.configurations[self.ground_state].probabilities_at_P[
                     f"{P:.2f}_GPa"
                 ]  # probabilities vs T
                 V0 = self.pt_properties[f"{P:.2f}_GPa"]["V0"]  # V0 vs T
@@ -612,44 +683,47 @@ class System:
             # Only consider 0 GPa for miscibility gap for T-V diagram
             # Current method can only handle one common tangent
 
+            helmholtz_energies = self.helmholtz_energies[index, :]
             helmholtz_energies_dV = self.helmholtz_energies_dV[index, :]
-            helmholtz_energies_d2V2 = self.helmholtz_energies_d2V2[index, :]
 
-            # Interpolators for dF/dV and d^2F/dV^2
+            # Interpolators for F and dF/dV
+            F_interpolator = PchipInterpolator(self.volumes, helmholtz_energies)
             dV_interpolator = PchipInterpolator(self.volumes, helmholtz_energies_dV)
-            d2V2_interpolator = PchipInterpolator(self.volumes, helmholtz_energies_d2V2)
 
-            # Find sign changes in d^2F/dV^2 (roots)
-            roots = []
-            for i in range(len(self.volumes) - 1):
-                if (
-                    helmholtz_energies_d2V2[i] * helmholtz_energies_d2V2[i + 1]
-                ) < 0:  # True if there is a change of sign
-                    res = root_scalar(
-                        d2V2_interpolator,
-                        bracket=(self.volumes[i], self.volumes[i + 1]),
-                        method="brentq",
-                        xtol=1e-10,
-                        rtol=1e-12,
-                    )
-                    if res.converged:
-                        roots.append(res.root)
+            # Find when dF/dV changes sign between consecutive volumes
+            dy = np.diff(helmholtz_energies_dV)
+            sign_change = np.diff(np.sign(dy))
+            idx = np.where(sign_change != 0)[0] + 1  # +1 to correct index after diff
 
             # Move left from the first root and right from the second root until dF/dV values are approximately equal (miscibility gap volumes)
-            if roots:
-                left_root = roots[0]
-                right_root = roots[-1]
+            if len(idx) > 0:
+                left_root = idx[0]
+                right_root = idx[-1]
 
-                left_volume = left_root - volume_step_size
-                right_volume = right_root + volume_step_size
+                left_volume = self.volumes[left_root]
+                right_volume = self.volumes[right_root]
                 left_helmholtz_energy_dV = dV_interpolator(left_volume)
                 right_helmholtz_energy_dV = dV_interpolator(right_volume)
 
-                while ~np.isclose(left_helmholtz_energy_dV, right_helmholtz_energy_dV, atol=atol):
+                while not (np.isclose(left_helmholtz_energy_dV, right_helmholtz_energy_dV, atol=atol)):
                     left_volume -= volume_step_size
                     right_volume += volume_step_size
                     left_helmholtz_energy_dV = dV_interpolator(left_volume)
                     right_helmholtz_energy_dV = dV_interpolator(right_volume)
+
+                    left_helmholtz_energy = F_interpolator(left_volume)
+                    right_helmholtz_energy = F_interpolator(right_volume)
+                    secant_slope = (right_helmholtz_energy - left_helmholtz_energy) / (right_volume - left_volume)
+
+                # Check that all three values are within a tolerance of 0.001
+                if not (
+                    np.isclose(secant_slope, left_helmholtz_energy_dV, atol=0.001)
+                    and np.isclose(secant_slope, right_helmholtz_energy_dV, atol=0.001)
+                    and np.isclose(left_helmholtz_energy_dV, right_helmholtz_energy_dV, atol=0.001)
+                ):
+                    print("Warning: Secant slope and derivatives are not all within a tolerance of 0.001.")
+                    print(secant_slope, left_helmholtz_energy_dV, right_helmholtz_energy_dV)
+                    break
 
                 self.pt_phase_diagram["first_order"]["P"] = np.append(
                     self.pt_phase_diagram["first_order"]["P"],
@@ -929,7 +1003,6 @@ class System:
         type: str,
         P: float = 0.00,
         selected_temperatures: np.ndarray = None,
-        ground_state: str = None,
         width: int = 650,
         height: int = 600,
     ):
@@ -940,7 +1013,6 @@ class System:
             type (str): The type of plot to generate (e.g., "helmholtz_energy_pv_vs_volume").
             P (float): Pressure in GPa for the plot. Default is 0.00 GPa.
             selected_temperatures (np.ndarray, optional): Temperatures to highlight in the helmholtz_energy_pv_vs_volume plot.
-            ground_state (str, optional): Name of the ground state configuration for probability plots.
             width (int, optional): Width of the plot in pixels.
             height (int, optional): Height of the plot in pixels.
 
@@ -1072,63 +1144,34 @@ class System:
 
         if type == "probability_vs_temperature":
             traces = []
-            # Add ground state first if present
-            if ground_state is not None and ground_state in y_data:
-                traces.append(
-                    go.Scatter(
-                        x=x_data,
-                        y=y_data[ground_state],
-                        mode="lines",
-                        name=ground_state,
-                    )
-                )
-                gs_probs = np.array(y_data[ground_state])
-                # Interpolate to find temperature where probability crosses 0.5
-                try:
-                    interp = PchipInterpolator(x_data, gs_probs)
-                    roots = []
-                    for i in range(len(x_data) - 1):
-                        # Check if the probability crosses 0.5 between x_data[i] and x_data[i+1]
-                        if (gs_probs[i] - 0.5) * (gs_probs[i + 1] - 0.5) < 0:
-                            res = root_scalar(
-                                lambda T: interp(T) - 0.5,
-                                bracket=(x_data[i], x_data[i + 1]),
-                                method="brentq",
-                                xtol=1e-10,
-                                rtol=1e-12,
-                            )
-                            if res.converged:
-                                roots.append(res.root)
-                except Exception:
-                    pass
-                # Sum all probabilities except the ground state
-                excited_probs = np.zeros_like(x_data, dtype=float)
-                for name, probs in y_data.items():
-                    if name != ground_state:
-                        excited_probs += probs
-                traces.append(
-                    go.Scatter(
-                        x=x_data,
-                        y=excited_probs,
-                        mode="lines",
-                        name="Sum (Non-GS)",
-                        line=dict(color="black"),
-                    )
-                )
-                # Add the rest (non-ground states)
-                for name, probs in y_data.items():
-                    if name != ground_state:
-                        traces.append(
-                            go.Scatter(
-                                x=x_data,
-                                y=probs,
-                                mode="lines",
-                                name=name,
-                            )
-                        )
 
-            else:
-                for name, probs in y_data.items():
+            # Add ground state first
+            traces.append(
+                go.Scatter(
+                    x=x_data,
+                    y=y_data[self.ground_state],
+                    mode="lines",
+                    name=self.ground_state,
+                )
+            )
+
+            # Sum all probabilities except the ground state
+            excited_probs = np.zeros_like(x_data, dtype=float)
+            for name, probs in y_data.items():
+                if name != self.ground_state:
+                    excited_probs += probs
+            traces.append(
+                go.Scatter(
+                    x=x_data,
+                    y=excited_probs,
+                    mode="lines",
+                    name="Sum (Non-GS)",
+                    line=dict(color="black"),
+                )
+            )
+            # Add the rest (non-ground states)
+            for name, probs in y_data.items():
+                if name != self.ground_state:
                     traces.append(
                         go.Scatter(
                             x=x_data,
@@ -1144,7 +1187,7 @@ class System:
             y_label = "Probability"
             fig.update_layout(
                 title=dict(
-                    text=f"P = {P:.2f} GPa" if P is not None else "P = None",
+                    text=f"P = {P:.2f} GPa",
                     font=dict(size=22, color="rgb(0,0,0)"),
                 ),
                 yaxis=dict(range=[0, None]),
@@ -1226,7 +1269,7 @@ class System:
                     )
                 )
             if fixed_by == "pressure" or type == "helmholtz_energy_pv_vs_volume":
-                title_text = f"P = {P:.2f} GPa" if P is not None else "P = None"
+                title_text = f"P = {P:.2f} GPa"
                 fig.update_layout(title=dict(text=title_text, font=dict(size=22, color="rgb(0,0,0)")))
 
             x_label = "Temperature (K)" if "temperature" in type else "Volume (Å³)"
