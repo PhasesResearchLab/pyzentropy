@@ -1,5 +1,5 @@
-pyzentropy documentation
-========================
+Documentation
+=============
 
 **pyzentropy** is a simple Python package that implements the recursion property of entropy for first-principles thermodynamic calculations.
 
