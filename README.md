@@ -1,6 +1,6 @@
 
 <p align="left">
-    <img src="docs/latest_pyzentropy.drawio.png" alt="pyzentropy Logo" width="450">
+    <img src="docs/_static/pyzentropy_logo.png" alt="pyzentropy Logo" width="450">
 </p>
 
 [![Testing](https://github.com/nhew1994/pyzentropy/actions/workflows/test.yml/badge.svg)](https://github.com/nhew1994/pyzentropy/actions/workflows/test.yml)
