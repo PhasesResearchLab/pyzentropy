@@ -4,4 +4,4 @@ Utilities
 .. toctree::
    :maxdepth: 2
 
-   pyzentropy.utilities
+   pyzentropy.plotly_utils
