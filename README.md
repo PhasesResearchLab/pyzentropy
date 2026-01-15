@@ -1,8 +1,4 @@
-
-<p align="left">
-    <img src="docs/_static/pyzentropy_logo.png" alt="pyzentropy Logo" width="450">
-</p>
-
+## pyzentropy
 [![Testing](https://github.com/nhew1994/pyzentropy/actions/workflows/test.yml/badge.svg)](https://github.com/nhew1994/pyzentropy/actions/workflows/test.yml)
 
 ## Installation
