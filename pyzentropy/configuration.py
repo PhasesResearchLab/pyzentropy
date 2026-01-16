@@ -13,8 +13,21 @@ BOLTZMANN_CONSTANT = scipy.constants.Boltzmann / scipy.constants.electron_volt  
 
 class Configuration:
     """
-    Represents a thermodynamic configuration with methods for calculating
-    internal energies, partition functions, and plotting thermodynamic properties.
+    Represents a single configuration and its thermodynamic properties,
+    dependent on temperature and volume.
+    
+    This class stores Helmholtz free energies and related thermodynamic
+    quantities for a given configuration, and provides methods for computing
+    derived properties such as internal energy. It is used as a component of
+    a larger thermodynamic `System`.
+
+    Notes:
+        - All array-valued thermodynamic quantities follow the shape ``(n_temperatures, n_volumes)``.
+        - Temperatures are in Kelvin.
+        - Volumes are in Å³.
+        - Energies are in eV and are extensive with respect to the configuration size (`number_of_atoms`).
+        - Entropies and heat capacities are in eV/K and are extensive with respect to the configuration size (`number_of_atoms`).
+
 
     Attributes:
         name (str): Name of the configuration.
