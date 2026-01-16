@@ -22,11 +22,11 @@ class Configuration:
     a larger thermodynamic `System`.
 
     Notes:
-        - All array-valued thermodynamic quantities follow the shape ``(n_temperatures, n_volumes)``.
-        - Temperatures are in Kelvin.
-        - Volumes are in Å³.
-        - Energies are in eV and are extensive with respect to the configuration size (`number_of_atoms`).
-        - Entropies and heat capacities are in eV/K and are extensive with respect to the configuration size (`number_of_atoms`).
+    - All array-valued thermodynamic quantities follow the shape ``(n_temperatures, n_volumes)``.
+    - Temperatures are in Kelvin.
+    - Volumes are in Å³.
+    - Energies are in eV and are extensive with respect to the configuration size (`number_of_atoms`).
+    - Entropies and heat capacities are in eV/K and are extensive with respect to the configuration size (`number_of_atoms`).
 
 
     Attributes:
