@@ -53,5 +53,13 @@ templates_path = ['_templates']
 
 html_theme = 'sphinx_rtd_theme'
 
+def linkcode_resolve(domain, info):
+    if domain != 'py':
+        return None
+    if not info['module']:
+        return None
+    filename = info['module'].replace('.', '/')
+    return "https://github.com/PhasesResearchLab/pyzentropy/blob/main/%s.py" % filename
+
 # -- Options for EPUB output
 epub_show_urls = 'footnote'
