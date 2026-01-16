@@ -13,23 +13,80 @@ BOLTZMANN_CONSTANT = scipy.constants.Boltzmann / scipy.constants.electron_volt  
 
 class Configuration:
     """
-    Represents a thermodynamic configuration with methods for calculating
-    internal energies, partition functions, and plotting thermodynamic properties.
+    Represents a single configuration and its thermodynamic properties,
+    dependent on temperature and volume.
+    
+    This class stores Helmholtz free energies and related thermodynamic
+    quantities for a given configuration, and provides methods for computing
+    derived properties such as internal energy. It is used as a component of
+    a larger thermodynamic `System`.
 
+    Notes:
+        - All array-valued thermodynamic quantities follow the shape ``(n_temperatures, n_volumes)``.
+        - Temperatures are in Kelvin.
+        - Volumes are in Å³.
+        - Energies are in eV and are extensive with respect to the configuration size (`number_of_atoms`).
+        - Entropies and heat capacities are in eV/K and are extensive with respect to the configuration size (`number_of_atoms`).
+
+    Args:
+        name (str):
+            Name or label of the configuration.
+        multiplicity (int):
+            Degeneracy factor used in statistical weighting.
+        number_of_atoms (int):
+            Number of atoms in the configuration.
+        volumes (np.ndarray):
+            Volume grid of shape ``(n_volumes,)``.
+        temperatures (np.ndarray):
+            Temperature grid of shape ``(n_temperatures,)``.
+        helmholtz_energies (np.ndarray):
+            Helmholtz free energies :math:`F_k(T, V)`.
+        helmholtz_energies_dV (np.ndarray):
+            First volume derivatives :math:`\partial F_k / \partial V`.
+        helmholtz_energies_d2V2 (np.ndarray):
+            Second volume derivatives :math:`\partial^2 F_k / \partial V^2`.
+        reference_helmholtz_energies (np.ndarray): 
+            Reference Helmholtz free energies to shift by.
+        entropies (np.ndarray):
+            Entropies :math:`S_k(T, V)`. Defaults to None.
+        heat_capacities (np.ndarray):
+            Heat capacities at constant volume :math:`C_{V,k}(T, V)`. Defaults to None.
+            
+    Raises:
+        ValueError: If any input array does not match the expected shape.
+            
     Attributes:
-        name (str): Name of the configuration.
-        multiplicity (int): Multiplicity of the configuration.
-        number_of_atoms (int): Number of atoms in the configuration.
-        volumes (np.ndarray): Array of volumes (shape: [n_volumes]).
-        temperatures (np.ndarray): Array of temperatures (shape: [n_temperatures]).
-        helmholtz_energies (np.ndarray): Helmholtz energies (shape: [n_temperatures, n_volumes]).
-        helmholtz_energies_dV (np.ndarray): First derivatives of Helmholtz energies (shape: [n_temperatures, n_volumes]).
-        helmholtz_energies_d2V2 (np.ndarray): Second derivatives of Helmholtz energies (shape: [n_temperatures, n_volumes]).
-        entropies (np.ndarray): Entropies (shape: [n_temperatures, n_volumes]).
-        heat_capacities (np.ndarray): Heat capacities (shape: [n_temperatures, n_volumes]).
-        internal_energies (np.ndarray): Internal energies (calculated, shape: [n_temperatures, n_volumes]).
-        partition_functions (np.ndarray): Partition functions (calculated, shape: [n_temperatures, n_volumes]).
-        probabilities (np.ndarray): Probabilities (calculated via System class, shape: [n_temperatures, n_volumes]).
+        name (str):
+            Name or label of the configuration.
+        multiplicity (int):
+            Degeneracy factor used in statistical weighting.
+        number_of_atoms (int):
+            Number of atoms in the configuration.
+        volumes (np.ndarray):
+            Volume grid of shape ``(n_volumes,)``.
+        temperatures (np.ndarray):
+            Temperature grid of shape ``(n_temperatures,)``.
+        
+        helmholtz_energies (np.ndarray):
+            Helmholtz free energies :math:`F_k(T, V)`.
+        helmholtz_energies_dV (np.ndarray):
+            First volume derivatives :math:`\partial F_k / \partial V`.
+        helmholtz_energies_d2V2 (np.ndarray):
+            Second volume derivatives :math:`\partial^2 F_k / \partial V^2`.
+        entropies (np.ndarray):
+            Entropies :math:`S_k(T, V)`.
+        heat_capacities (np.ndarray):
+            Heat capacities at constant volume :math:`C_{V,k}(T, V)`.
+        
+        internal_energies (np.ndarray):
+            Internal energies :math:`E_k(T, V) = F_k(T, V) + T S_k(T, V)`, computed from
+            stored thermodynamic data.
+        partition_functions (np.ndarray):
+            Configuration partition functions :math:`Z_k(T, V) = \exp(-F_k(T, V)/(k_B T))`,
+            computed by a `System` object during ensemble calculations.
+        probabilities (np.ndarray):
+            Configuration probabilities :math:`p_k(T, V) = Z_k(T, V) / Z(T, V)`,
+            computed by a `System` object during ensemble calculations.
     """
 
     def __init__(
@@ -45,24 +102,7 @@ class Configuration:
         entropies: np.ndarray = None,
         heat_capacities: np.ndarray = None,
     ):
-        """
-        Initialize a Configuration object and check input array shapes.
 
-        Args:
-            name (str): Name of the configuration.
-            multiplicity (int): Multiplicity of the configuration.
-            number_of_atoms (int): Number of atoms in the configuration.
-            volumes (np.ndarray): Array of volumes (shape: [n_volumes]).
-            temperatures (np.ndarray): Array of temperatures (shape: [n_temperatures]).
-            helmholtz_energies (np.ndarray): Helmholtz energies (shape: [n_temperatures, n_volumes]).
-            helmholtz_energies_dV (np.ndarray): First derivatives of Helmholtz energies (shape: [n_temperatures, n_volumes]).
-            helmholtz_energies_d2V2 (np.ndarray): Second derivatives of Helmholtz energies (shape: [n_temperatures, n_volumes]).
-            entropies (np.ndarray): Entropies (shape: [n_temperatures, n_volumes]). Defaults to None.
-            heat_capacities (np.ndarray): Heat capacities (shape: [n_temperatures, n_volumes]). Defaults to None.
-
-        Raises:
-            ValueError: If any input array does not match the expected shape.
-        """
         expected_shape = (len(temperatures), len(volumes))
         for arr, arr_name in [
             (helmholtz_energies, "helmholtz_energies"),
