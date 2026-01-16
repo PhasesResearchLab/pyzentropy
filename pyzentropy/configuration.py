@@ -61,7 +61,7 @@ class Configuration:
             Configuration probabilities :math:`p_k(T, V) = Z_k(T, V) / Z(T, V)`,
             computed by a `System` object during ensemble calculations.
     """
-
+    #TODO: move __init__ docstrings above.
     def __init__(
         self,
         name: str,
