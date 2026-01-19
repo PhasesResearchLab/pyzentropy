@@ -1,5 +1,5 @@
-pyzentropy.plotly_utils
-========================
+Utilities
+=========
 
 .. automodule:: pyzentropy.plotly_utils
    :members:
