@@ -17,18 +17,21 @@ class Configuration:
     Represents a single configuration and its thermodynamic properties,
     dependent on temperature and volume.
 
-    This class stores Helmholtz free energies and related thermodynamic
-    quantities for a given configuration, and provides methods for computing
-    derived properties such as internal energy. It is used as a component of
-    a larger thermodynamic `System`.
+    This class stores Helmholtz free energies and related thermodynamic quantities
+    for a given configuration, and provides methods for computing derived properties
+    such as the internal energy. It is used as a component of a larger thermodynamic
+    `System`. The properties can be plotted either as a function of temperature or
+    volume.
 
     Notes:
-        - All array-valued thermodynamic quantities follow the shape ``(n_temperatures, n_volumes)``.
+        - All array-valued thermodynamic quantities follow the shape
+        ``(n_temperatures, n_volumes)``.
         - Temperatures are in Kelvin.
         - Volumes are in Å³.
-        - Energies are in eV and are extensive with respect to the configuration size (`number_of_atoms`).
-        - Entropies and heat capacities are in eV/K and are extensive with respect to the configuration 
+        - Energies are in eV and are extensive with respect to the configuration
         size (`number_of_atoms`).
+        - Entropies and heat capacities are in eV/K and are extensive with respect
+        to the configuration size (`number_of_atoms`).
 
     Args:
         name (str):
