@@ -84,13 +84,13 @@ class Configuration:
             Heat capacities at constant volume :math:`C_{V,k}(T, V)`.
 
         internal_energies (np.ndarray):
-            Internal energies :math:`E_k(T, V) = F_k(T, V) + T S_k(T, V)`, computed from
-            stored thermodynamic data.
+            Internal energies :math:`E_k(T, V)`, computed from stored
+            thermodynamic data.
         partition_functions (np.ndarray):
-            Configuration partition functions :math:`Z_k(T, V) = \exp(-F_k(T, V)/(k_B T))`,
+            Configuration partition functions :math:`Z_k(T, V)`,
             computed by a `System` object during ensemble calculations.
         probabilities (np.ndarray):
-            Configuration probabilities :math:`p_k(T, V) = Z_k(T, V) / Z(T, V)`,
+            Configuration probabilities :math:`p_k(T, V)`,
             computed by a `System` object during ensemble calculations.
     """
 
