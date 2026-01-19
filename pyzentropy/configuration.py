@@ -8,14 +8,15 @@ import plotly.graph_objects as go
 # Local Imports
 from pyzentropy.plotly_utils import format_plot
 
-BOLTZMANN_CONSTANT = scipy.constants.Boltzmann / scipy.constants.electron_volt  # The Boltzmann constant in eV/K
+# The Boltzmann constant in eV/K
+BOLTZMANN_CONSTANT = scipy.constants.Boltzmann / scipy.constants.electron_volt 
 
 
 class Configuration:
     """
     Represents a single configuration and its thermodynamic properties,
     dependent on temperature and volume.
-    
+
     This class stores Helmholtz free energies and related thermodynamic
     quantities for a given configuration, and provides methods for computing
     derived properties such as internal energy. It is used as a component of
@@ -26,7 +27,8 @@ class Configuration:
         - Temperatures are in Kelvin.
         - Volumes are in Å³.
         - Energies are in eV and are extensive with respect to the configuration size (`number_of_atoms`).
-        - Entropies and heat capacities are in eV/K and are extensive with respect to the configuration size (`number_of_atoms`).
+        - Entropies and heat capacities are in eV/K and are extensive with respect to the configuration 
+        size (`number_of_atoms`).
 
     Args:
         name (str):
@@ -45,16 +47,16 @@ class Configuration:
             First volume derivatives :math:`\partial F_k / \partial V`.
         helmholtz_energies_d2V2 (np.ndarray):
             Second volume derivatives :math:`\partial^2 F_k / \partial V^2`.
-        reference_helmholtz_energies (np.ndarray): 
+        reference_helmholtz_energies (np.ndarray):
             Reference Helmholtz free energies to shift by.
         entropies (np.ndarray):
             Entropies :math:`S_k(T, V)`. Defaults to None.
         heat_capacities (np.ndarray):
             Heat capacities at constant volume :math:`C_{V,k}(T, V)`. Defaults to None.
-            
+
     Raises:
         ValueError: If any input array does not match the expected shape.
-            
+
     Attributes:
         name (str):
             Name or label of the configuration.
@@ -66,7 +68,7 @@ class Configuration:
             Volume grid of shape ``(n_volumes,)``.
         temperatures (np.ndarray):
             Temperature grid of shape ``(n_temperatures,)``.
-        
+
         helmholtz_energies (np.ndarray):
             Helmholtz free energies :math:`F_k(T, V)`.
         helmholtz_energies_dV (np.ndarray):
@@ -77,7 +79,7 @@ class Configuration:
             Entropies :math:`S_k(T, V)`.
         heat_capacities (np.ndarray):
             Heat capacities at constant volume :math:`C_{V,k}(T, V)`.
-        
+
         internal_energies (np.ndarray):
             Internal energies :math:`E_k(T, V) = F_k(T, V) + T S_k(T, V)`, computed from
             stored thermodynamic data.
@@ -140,7 +142,7 @@ class Configuration:
 
     def calculate_internal_energies(self) -> None:
         """
-        Calculate internal energies using the formula: E = F + T*S.
+        Compute the internal energies using the formula :math:`E_k(T, V) = F_k(T, V) + T S_k(T, V)`.
         """
         self.internal_energies = self.helmholtz_energies + self.temperatures[:, np.newaxis] * self.entropies
 
@@ -151,7 +153,7 @@ class Configuration:
         selected_volumes: np.ndarray = None,
         width: int = 650,
         height: int = 600,
-    ):
+    ) -> go.Figure:
         """
         Plot thermodynamic properties as a function of temperature or volume.
 
