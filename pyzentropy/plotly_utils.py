@@ -2,7 +2,7 @@
 import plotly.graph_objects as go
 
 
-def format_plot(fig: go.Figure, xtitle: str, ytitle: str, width: int = 840, height: int = 600):
+def format_plot(fig: go.Figure, xtitle: str, ytitle: str, width: int = 840, height: int = 600) -> None:
     """
     Apply consistent formatting to a Plotly figure.
 
