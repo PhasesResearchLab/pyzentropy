@@ -2,8 +2,8 @@ API
 ===
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 5
 
-   api_configuration
+   pyzentropy.configuration
    api_system
    api_utilities
