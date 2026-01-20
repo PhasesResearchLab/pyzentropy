@@ -40,6 +40,14 @@ class System:
           to the configuration size (``number_of_atoms``).
         - Bulk moduli and pressures are in GPa.
 
+    Args:
+        configurations (dict[str, Configuration]): 
+            Dictionary mapping configuration names to Configuration objects.
+        ground_state (str): Name of the ground state configuration.
+
+    Raises:
+        ValueError: If configurations have inconsistent number of atoms, volumes, or temperatures.
+        
     Attributes:
         configurations (dict[str, Configuration]): 
             Dictionary mapping configuration names to Configuration objects.
@@ -61,7 +69,8 @@ class System:
         helmholtz_energies_d2V2 (np.ndarray):
             Second volume derivatives :math:`\partial^2 F / \partial V^2`.
         ground_state_helmholtz_energies (np.ndarray): 
-            Helmholtz free energies of the ground state configuration :math:`F_{\mathrm{GS}}(T, V)`.
+            Helmholtz free energies of the ground state configuration 
+            :math:`F_{\mathrm{GS}}(T, V)`.
         entropies (np.ndarray): 
             Entropies :math:`S(T, V)`.
         configurational_entropies (np.ndarray): 
@@ -80,16 +89,7 @@ class System:
     """
 
     def __init__(self, configurations: dict[str, Configuration], ground_state: str) -> None:
-        """
-        Initialize the System with a dictionary of Configuration objects.
 
-        Args:
-            configurations (dict[str, Configuration]): Dictionary mapping configuration names to Configuration objects.
-            ground_state (str): Name of the ground state configuration.
-
-        Raises:
-            ValueError: If configurations have inconsistent number of atoms, volumes, or temperatures.
-        """
         self.configurations = configurations
         self.ground_state = ground_state
 
@@ -149,7 +149,7 @@ class System:
         self.calculate_bulk_moduli()
         self.calculate_entropies()
         self.calculate_heat_capacities()
-
+    #TODO: continue fixing the docstrings here!
     def calculate_partition_functions(self) -> None:
         """
         Calculate the partition function for each configuration, using a reference ground state
