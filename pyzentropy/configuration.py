@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 from pyzentropy.plotly_utils import format_plot
 
 # The Boltzmann constant in eV/K
-BOLTZMANN_CONSTANT = scipy.constants.Boltzmann / scipy.constants.electron_volt 
+BOLTZMANN_CONSTANT = scipy.constants.Boltzmann / scipy.constants.electron_volt
 
 
 class Configuration:
@@ -17,11 +17,11 @@ class Configuration:
     Represents a single configuration and its thermodynamic properties,
     dependent on temperature and volume.
 
-    This class stores Helmholtz free energies and related thermodynamic quantities
-    for a given configuration, and provides methods for computing derived properties
-    such as the internal energy. It is used as a component of a larger thermodynamic
-    `System`. The properties can be plotted either as a function of temperature or
-    volume.
+    This class stores Helmholtz free energies and related thermodynamic
+    quantities for a given configuration, and provides methods for computing
+    derived properties such as the internal energy. It is used as a component
+    of a larger thermodynamic `System`. The properties can be plotted either
+    as a function of temperature or volume.
 
     Notes:
         - All array-valued thermodynamic quantities follow the shape
@@ -30,8 +30,8 @@ class Configuration:
         - Volumes are in Å³.
         - Energies are in eV and are extensive with respect to the configuration
           size (``number_of_atoms``).
-        - Entropies and heat capacities are in eV/K and are extensive with respect
-          to the configuration size (``number_of_atoms``).
+        - Entropies and heat capacities are in eV/K and are extensive with
+          respect to the configuration size (``number_of_atoms``).
 
     Args:
         name (str):
@@ -53,7 +53,8 @@ class Configuration:
         entropies (np.ndarray):
             Entropies :math:`S_k(T, V)`. Defaults to None.
         heat_capacities (np.ndarray):
-            Heat capacities at constant volume :math:`C_{V,k}(T, V)`. Defaults to None.
+            Heat capacities at constant volume :math:`C_{V,k}(T, V)`.
+            Defaults to None.
 
     Raises:
         ValueError: If any input array does not match the expected shape.
@@ -143,7 +144,8 @@ class Configuration:
 
     def calculate_internal_energies(self) -> None:
         """
-        Compute the internal energies using the formula :math:`E_k(T, V) = F_k(T, V) + T S_k(T, V)`.
+        Compute the internal energies using the formula
+        :math:`E_k(T, V) = F_k(T, V) + T S_k(T, V)`.
         """
         self.internal_energies = self.helmholtz_energies + self.temperatures[:, np.newaxis] * self.entropies
 
@@ -163,18 +165,22 @@ class Configuration:
                 Must be one of the following values:
                 ``'helmholtz_energy_vs_temperature'``, ``'entropy_vs_temperature'``,
                 ``'heat_capacity_vs_temperature'``, ``'internal_energy_vs_temperature'``,
-                ``'helmholtz_energy_vs_volume'``, ``'entropy_vs_volume'``, 
+                ``'helmholtz_energy_vs_volume'``, ``'entropy_vs_volume'``,
                 ``'heat_capacity_vs_volume'``, or ``'internal_energy_vs_volume'``.
-            selected_temperatures (np.ndarray, optional): Temperatures to plot (for fixed temperature plots).
-            selected_volumes (np.ndarray, optional): Volumes to plot (for fixed volume plots).
+            selected_temperatures (np.ndarray, optional): Temperatures to plot
+            (for fixed temperature plots).
+            selected_volumes (np.ndarray, optional): Volumes to plot
+            (for fixed volume plots).
             width (int, optional): Plot width in pixels.
             height (int, optional): Plot height in pixels.
 
         Raises:
             ValueError: If an invalid plot type is provided.
-            ValueError: If internal_energies is None when calling internal energy plots
+            ValueError: If internal_energies is None when calling internal
+            energy plots
             ValueError: If entropies is None when calling entropy plots
-            ValueError: If heat_capacities is None when calling heat capacity plots
+            ValueError: If heat_capacities is None when calling heat
+            capacity plots
 
         Returns:
             go.Figure: The generated plotly figure.
@@ -291,7 +297,8 @@ class Configuration:
 
     def _get_closest_indices(self, values: np.ndarray, targets: np.ndarray) -> list:
         """
-        Find indices of the closest matches in `values` for each target in `targets`.
+        Find indices of the closest matches in `values` for each target
+        in `targets`.
 
         Args:
             values (np.ndarray): Array to search.
