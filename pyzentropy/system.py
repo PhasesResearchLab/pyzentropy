@@ -157,7 +157,7 @@ class System:
         ground-state Helmholtz free energy.
 
         The configuration partition functions are computed as
-        :math:`Z_k = \exp\left[-\frac{F_k - F_{\mathrm{GS}}}{k_B T}\right]`.
+        :math:`Z_k = \exp(-\frac{F_k - F_{\mathrm{GS}}}{k_B T})`.
 
         The total partition function of the system is then obtained by summing over
         all configurations:
