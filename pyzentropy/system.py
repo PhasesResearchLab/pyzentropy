@@ -872,11 +872,10 @@ class System:
             plotly.graph_objects.Figure: The generated plotly figure.
 
         Raises:
-            ValueError: If:
-                - The plot type is invalid.
-                - Required data for the plot (e.g., Helmholtz energies,
-                  probabilities, volumes, pressure, etc.) is missing or
-                  not calculated.
+            ValueError: If the plot type is invalid.
+            ValueError: If the required data for the plot (e.g., Helmholtz energies,
+                probabilities, volumes, pressure, etc.) is missing or
+                not calculated.
         """
 
         # Central dictionary for plot behavior
@@ -1100,11 +1099,10 @@ class System:
             plotly.graph_objects.Figure: The generated plotly figure.
 
         Raises:
-            ValueError: If:
-                - Properties at P are not calculated.
-                - The plot type is invalid.
-                - Phase diagram data is not calculated when wanting to
-                  plot the phase diagram.
+            ValueError: If properties at P are not calculated.
+            ValueError: If the plot type is invalid.
+            ValueError: If phase diagram data is not calculated when
+                wanting to plot the phase diagram.
         """
 
         # Raise ValueError if properties at P are not calculated
