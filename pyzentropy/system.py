@@ -172,7 +172,7 @@ class System:
         F_0K_all = np.array([config.helmholtz_energies[0, :] for config in self.configurations.values()])
         min_F_0K = np.min(F_0K_all, axis=0)  # shape: (n_vols,)
 
-        for __, config in enumerate(self.configurations.values()):
+        for config in self.configurations.values():
             # For each volume, set Z=1 if F is minimal, else 0
             is_min = np.isclose(config.helmholtz_energies[0, :], min_F_0K)
             config.partition_functions[0, :] = is_min.astype(float)
