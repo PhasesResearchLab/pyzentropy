@@ -153,18 +153,9 @@ class System:
 
     def calculate_partition_functions(self) -> None:
         """
-        Calculate the partition function for each configuration using a reference
-        ground-state Helmholtz free energy.
-
-        The configuration partition functions are computed as
-        
-        .. math::
-
-            Z_k = \exp\!\Big[-\frac{F_k - F_{\mathrm{GS}}}{k_B T}\Big].
-
-        The total partition function of the system is then obtained by summing over
-        all configurations:
-        :math:`Z = \sum_k g_k Z_k`.
+        The configuration partition functions :math:`Z_k(T, V)` are first computed,
+        and then the total partition function of the system is obtained by summing
+        over all configurations: :math:`Z = \sum_k g_k Z_k`.
         """
 
         # Initialize config partition functions
