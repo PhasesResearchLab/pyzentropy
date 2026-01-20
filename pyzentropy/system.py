@@ -9,34 +9,74 @@ from scipy.interpolate import PchipInterpolator
 from pyzentropy.plotly_utils import format_plot
 from pyzentropy.configuration import Configuration
 
-EV_PER_CUBIC_ANGSTROM_TO_GPA = 160.21766208  # 1 eV/Å^3  = 160.21766208 GPa
-BOLTZMANN_CONSTANT = scipy.constants.Boltzmann / scipy.constants.electron_volt  # The Boltzmann constant in eV/K
+# 1 eV/Å^3  = 160.21766208 GPa
+EV_PER_CUBIC_ANGSTROM_TO_GPA = 160.21766208
+
+# The Boltzmann constant in eV/K
+BOLTZMANN_CONSTANT = scipy.constants.Boltzmann / scipy.constants.electron_volt
 
 
 class System:
     """
     Represents a thermodynamic system composed of multiple configurations.
-    Provides methods to calculate system thermodynamic quantities,
-    and to generate various plots for analysis.
+
+    This class provides methods to calculate system thermodynamic quantities,
+    such as Helmholtz free energies and related properties. In addition to
+    properties dependent on temperature and volume, it can also calculate
+    properties at fixed pressure and generate phase diagrams. 
+
+    Properties dependent on temperature and volume can be plotted either as a
+    function of temperature or volume. Properties at fixed pressure are plotted
+    as a function of temperature.
+    
+    Notes:
+        - All array-valued thermodynamic quantities follow the shape
+          ``(n_temperatures, n_volumes)``.
+        - Temperatures are in Kelvin.
+        - Volumes are in Å³.
+        - Energies are in eV and are extensive with respect to the configuration
+          size (``number_of_atoms``).
+        - Entropies and heat capacities are in eV/K and are extensive with respect
+          to the configuration size (``number_of_atoms``).
+        - Bulk moduli and pressures are in GPa.
 
     Attributes:
-        configurations (dict[str, Configuration]): Dictionary mapping configuration names to Configuration objects.
-        ground_state (str): Name of the ground state configuration.
-        number_of_atoms (int): Number of atoms in the system.
-        temperatures (np.ndarray): Array of temperatures considered (shape: [n_temperatures]).
-        volumes (np.ndarray): Array of volumes considered (shape: [n_volumes]).
-        partition_functions (np.ndarray): Total partition function for the system (shape: [n_temperatures, n_volumes]).
-        helmholtz_energies (np.ndarray): Helmholtz energies for the system (shape: [n_temperatures, n_volumes]).
-        helmholtz_energies_dV (np.ndarray): First derivative of Helmholtz energies with respect to volume (shape: [n_temperatures, n_volumes]).
-        helmholtz_energies_d2V2 (np.ndarray): Second derivative of Helmholtz energies with respect to volume (shape: [n_temperatures, n_volumes]).
-        ground_state_helmholtz_energies (np.ndarray): Helmholtz energies of the ground state configuration (shape: [n_temperatures, n_volumes]).
-        entropies (np.ndarray): Total entropies for the system (shape: [n_temperatures, n_volumes]).
-        configurational_entropies (np.ndarray): Configurational entropies for the system (shape: [n_temperatures, n_volumes]).
-        bulk_moduli (np.ndarray): Bulk moduli for the system (shape: [n_temperatures, n_volumes]).
-        heat_capacities (np.ndarray): Heat capacities for the system (shape: [n_temperatures, n_volumes]).
-        pt_properties (dict): Dictionary storing pressure-temperature dependent properties.
-        pt_phase_diagram (dict): Pressure-temperature phase diagram data.
-        vt_phase_diagram (dict): Volume-temperature phase diagram data.
+        configurations (dict[str, Configuration]): 
+            Dictionary mapping configuration names to Configuration objects.
+        ground_state (str): 
+            Name of the ground state configuration.
+        number_of_atoms (int): 
+            Number of atoms in the system.
+        volumes (np.ndarray): 
+            Volume grid of shape ``(n_volumes,)``.
+        temperatures (np.ndarray): 
+            Temperature grid of shape ``(n_temperatures,)``.
+        
+        partition_functions (np.ndarray): 
+            Partition functions :math:`Z(T, V)`.
+        helmholtz_energies (np.ndarray):
+            Helmholtz free energies :math:`F(T, V)`.
+        helmholtz_energies_dV (np.ndarray):
+            First volume derivatives :math:`\partial F / \partial V`.
+        helmholtz_energies_d2V2 (np.ndarray):
+            Second volume derivatives :math:`\partial^2 F / \partial V^2`.
+        ground_state_helmholtz_energies (np.ndarray): 
+            Helmholtz free energies of the ground state configuration :math:`F_{\mathrm{GS}}(T, V)`.
+        entropies (np.ndarray): 
+            Entropies :math:`S(T, V)`.
+        configurational_entropies (np.ndarray): 
+            Configurational entropies :math:`S_{\mathrm{conf}}(T, V)`.
+        bulk_moduli (np.ndarray): 
+            Bulk moduli :math:`B(T, V)`.
+        heat_capacities (np.ndarray): 
+            Heat capacities at constant volume :math:`C_V(T, V)`.
+            
+        pt_properties (dict): 
+            Dictionary storing pressure-temperature dependent properties.
+        pt_phase_diagram (dict): 
+            Pressure-temperature phase diagram data.
+        vt_phase_diagram (dict): 
+            Volume-temperature phase diagram data.
     """
 
     def __init__(self, configurations: dict[str, Configuration], ground_state: str) -> None:
