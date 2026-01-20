@@ -161,7 +161,12 @@ class Configuration:
         Plot thermodynamic properties as a function of temperature or volume.
 
         Args:
-            type (str): Type of plot to generate.
+            type (str):
+                Must be one of the following values:
+                ``'helmholtz_energy_vs_temperature'``, ``'entropy_vs_temperature'``,
+                ``'heat_capacity_vs_temperature'``, ``'internal_energy_vs_temperature'``,
+                ``'helmholtz_energy_vs_volume'``, ``'entropy_vs_volume'``, 
+                ``'heat_capacity_vs_volume'``, or ``'internal_energy_vs_volume'``.
             selected_temperatures (np.ndarray, optional): Temperatures to plot (for fixed temperature plots).
             selected_volumes (np.ndarray, optional): Volumes to plot (for fixed volume plots).
             width (int, optional): Plot width in pixels.
@@ -174,7 +179,7 @@ class Configuration:
             ValueError: If heat_capacities is None when calling heat capacity plots
 
         Returns:
-            plotly.graph_objects.Figure: The generated plotly figure.
+            go.Figure: The generated plotly figure.
         """
 
         plot_data = {
