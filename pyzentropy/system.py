@@ -157,13 +157,13 @@ class System:
 
     def calculate_partition_functions(self) -> None:
         """
-        Calculate the partition function for each configuration using a 
+        Calculate the partition function for each configuration using a
         reference ground-state Helmholtz free energy.
 
         The configuration partition functions are computed as
         :math:`Z_k(T, V) = \exp(-\frac{F_k - F_{\mathrm{GS}}}{k_B T})`.
 
-        The total partition function of the system is then obtained by 
+        The total partition function of the system is then obtained by
         summing over all configurations:
         :math:`Z(T, V) = \sum_k g_k Z_k`.
         """
@@ -210,7 +210,7 @@ class System:
 
     def calculate_probabilities(self) -> None:
         """
-        Calculate the configuration probabilities 
+        Calculate the configuration probabilities
         :math:`p_k(T, V) = \frac{g_k Z_k}{Z}`.
 
         Raises:
@@ -232,8 +232,8 @@ class System:
         Calculate the Helmholtz free energies for the system :math:`F(T, V)`.
 
         Args:
-            ground_state_helmholtz_energies (np.ndarray): 
-            Reference ground-state Helmholtz free energies :math:`F_{GS}(T, V)` 
+            ground_state_helmholtz_energies (np.ndarray):
+            Reference ground-state Helmholtz free energies :math:`F_{GS}(T, V)`
             to shift the configuration Helmholtz free energies in the exponential.
 
         Raises:
@@ -271,14 +271,14 @@ class System:
 
     def calculate_helmholtz_energies_dV(self) -> None:
         """
-        Calculate the first derivative of the Helmholtz energy with 
+        Calculate the first derivative of the Helmholtz energies with
         respect to volume :math:`\partial F / \partial V`.
 
         Raises:
-            ValueError: If the probabilities or Helmholtz energy first 
+            ValueError: If the probabilities or Helmholtz energy first
             derivatives are missing for any configuration.
         """
-        
+
         # Initialize dF/dV array
         self.helmholtz_energies_dV = np.zeros((self._n_temps, self._n_vols))
 
@@ -297,11 +297,14 @@ class System:
 
     def calculate_helmholtz_energies_d2V2(self) -> None:
         """
-        Calculate the second derivative of the Helmholtz free energy with respect to volume.
+        Calculate the second derivative of the Helmholtz free energies
+        with respect to volume :math:`\partial^2 F / \partial V^2`.
 
         Raises:
-            ValueError: If probabilities, dF/dV, or d2F/dV2 are missing for any configuration.
+            ValueError: If the probabilities, or the Helmholtz energy
+            first and second derivatives are missing for any configuration.
         """
+
         # Check that the probabilities, dF/dV, and d2F/dV2 are calculated for each configuration
         for config in self.configurations.values():
             if config.probabilities is None:
@@ -346,10 +349,12 @@ class System:
 
     def calculate_bulk_moduli(self) -> None:
         """
-        Calculate the bulk modulus for the system at each temperature and volume.
+        Calculate the bulk moduli for the system at each temperature
+        and volume :math:`B(T, V)`.
 
         Raises:
-            ValueError: If helmholtz_energies_d2V2 is not calculated.
+            ValueError: If the second derivative of the Helmholtz free
+            energy with respect to volume is not calculated.
         """
 
         # If helmholtz_energies_d2V2 is not calculated, raise error
@@ -359,11 +364,14 @@ class System:
 
     def calculate_entropies(self) -> None:
         """
-        Calculate the configurational entropy and total entropy for the system.
+        Calculate the configurational entropy :math:`S_\mathrm{config}(T, V)`
+        and total entropy :math:`S(T, V)` for the system.
 
         Raises:
-            ValueError: If probabilities or entropies are missing for any configuration.
+            ValueError: If probabilities or entropies are missing for
+            any configuration.
         """
+
         # Check that probabilities and entropies are calculated for each configuration
         for config in self.configurations.values():
             if config.probabilities is None:
@@ -399,11 +407,14 @@ class System:
 
     def calculate_heat_capacities(self) -> None:
         """
-        Calculate the heat capacity for the system at each temperature and volume.
+        Calculate the heat capacities for the system at each temperature
+        and volume :math:`C_V(T, V)`.
 
         Raises:
-            ValueError: If probabilities, heat capacities, or internal energies are missing for any configuration.
+            ValueError: If probabilities, heat capacities, or internal
+            energies are missing for any configuration.
         """
+
         # Check that the probabilities, heat capacities, and internal energies are calculated for each configuration
         for config in self.configurations.values():
             if config.probabilities is None:
@@ -446,14 +457,17 @@ class System:
 
     def calculate_pressure_properties(self, P: float) -> None:
         """
-        Calculate pressure-dependent properties (V0, G0, S0, Sconf, B0, CTE, LCTE, Cp) at a given pressure.
+        Calculate pressure-dependent properties :math:`V_0`, :math:`G_0`,
+        :math:`S_0`, :math:`S_{\mathrm{conf}}`, :math:`B_0`, :math:`\mathrm{CTE}`,
+        :math:`\mathrm{LCTE}`, :math:`C_p` at a given pressure.
 
         Args:
             P (float): Pressure in GPa.
 
         Raises:
-            ValueError: If any Helmholtz energies or their derivatives are not calculated,
-                or if probabilities for any configuration are not calculated.
+            ValueError: If any Helmholtz energies or their derivatives
+                are not calculated, or if probabilities for any configuration
+                are not calculated.
         """
 
         # Check required attributes
@@ -647,16 +661,20 @@ class System:
 
     def calculate_phase_diagrams(self, dP: float = 0.2, volume_step_size: float = 1e-4, atol: float = 1e-6) -> None:
         """
-        Calculate pressure-temperature and volume-temperature phase diagrams for the system.
+        Calculate pressure-temperature and volume-temperature phase diagrams
+        for the system.
 
         Args:
             dP (float): Pressure increment in GPa. Default is 0.2 GPa.
-            volume_step_size (float): Step size for volume when searching for the miscibility gap. Default is 1e-4.
-            atol (float): Absolute tolerance for convergence in the common tangent search. Default is 1e-6.
+            volume_step_size (float): Step size for volume when searching
+            for the miscibility gap. Default is 1e-4.
+            atol (float): Absolute tolerance for convergence in the common
+            tangent search. Default is 1e-6.
 
         Raises:
-            ValueError: If any of the Helmholtz energies or their first derivatives are not calculated,
-                or if probabilities for any configuration are not calculated.
+            ValueError: If any of the Helmholtz energies or their first
+                derivatives are not calculated, or if probabilities for
+                any configuration are not calculated.
         """
         # Raise errors if required attributes are missing
         if self.helmholtz_energies_dV is None:
@@ -843,9 +861,12 @@ class System:
         Generate a plot vs. volume or temperature for the specified thermodynamic quantity.
 
         Args:
-            type (str): The type of plot to generate (e.g., "helmholtz_energy_vs_volume").
-            selected_temperatures (np.ndarray, optional): Temperatures to highlight in the plot.
-            selected_volumes (np.ndarray, optional): Volumes to highlight in the plot.
+            type (str): The type of plot to generate
+            (e.g., "helmholtz_energy_vs_volume").
+            selected_temperatures (np.ndarray, optional): Temperatures
+            to highlight in the plot.
+            selected_volumes (np.ndarray, optional): Volumes to highlight
+            in the plot.
             width (int, optional): Width of the plot in pixels.
             height (int, optional): Height of the plot in pixels.
 
@@ -855,7 +876,9 @@ class System:
         Raises:
             ValueError: If:
                 - The plot type is invalid.
-                - Required data for the plot (e.g., Helmholtz energies, probabilities, volumes, pressure, etc.) is missing or not calculated.
+                - Required data for the plot (e.g., Helmholtz energies,
+                probabilities, volumes, pressure, etc.) is missing or
+                not calculated.
         """
 
         # Central dictionary for plot behavior
@@ -1067,9 +1090,11 @@ class System:
         Generate a plot for the specified thermodynamic quantity.
 
         Args:
-            type (str): The type of plot to generate (e.g., "helmholtz_energy_pv_vs_volume").
+            type (str): The type of plot to generate
+            (e.g., "helmholtz_energy_pv_vs_volume").
             P (float): Pressure in GPa for the plot. Default is 0.00 GPa.
-            selected_temperatures (np.ndarray, optional): Temperatures to highlight in the helmholtz_energy_pv_vs_volume plot.
+            selected_temperatures (np.ndarray, optional): Temperatures
+            to highlight in the helmholtz_energy_pv_vs_volume plot.
             width (int, optional): Width of the plot in pixels.
             height (int, optional): Height of the plot in pixels.
 
@@ -1080,7 +1105,8 @@ class System:
             ValueError: If:
                 - Properties at P are not calculated.
                 - The plot type is invalid.
-                - Phase diagram data is not calculated when wanting to plot the phase diagram.
+                - Phase diagram data is not calculated when wanting to
+                plot the phase diagram.
         """
         # Raise ValueError if properties at P are not calculated
         if f"{P:.2f}_GPa" not in self.pt_properties:
