@@ -149,13 +149,18 @@ class System:
         self.calculate_bulk_moduli()
         self.calculate_entropies()
         self.calculate_heat_capacities()
-    #TODO: continue fixing the docstrings here!
+
     def calculate_partition_functions(self) -> None:
         """
-        Calculate the partition function for each configuration, using a reference ground state
-        Helmholtz energy using the formula: Zk = exp(-(Fk - Fk_ref) / (k_B * T)).
-        Calculate the total partition function for the system by summing over all configurations.
-        Each configuration's partition function is weighted by its multiplicity, Z = Σk mk * Zk.
+        Calculate the partition function for each configuration using a reference
+        ground-state Helmholtz free energy.
+
+        The configuration partition functions are computed as
+        :math:`Z_k = \exp\!\left[-(F_k - F_k^{\mathrm{ref}}) / (k_B T)\right]`.
+
+        The total partition function of the system is then obtained by summing over
+        all configurations:
+        :math:`Z = \sum_k g_k Z_k`.
         """
 
         # Initialize config partition functions
@@ -167,7 +172,7 @@ class System:
         F_0K_all = np.array([config.helmholtz_energies[0, :] for config in self.configurations.values()])
         min_F_0K = np.min(F_0K_all, axis=0)  # shape: (n_vols,)
 
-        for config_idx, config in enumerate(self.configurations.values()):
+        for __, config in enumerate(self.configurations.values()):
             # For each volume, set Z=1 if F is minimal, else 0
             is_min = np.isclose(config.helmholtz_energies[0, :], min_F_0K)
             config.partition_functions[0, :] = is_min.astype(float)
