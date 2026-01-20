@@ -36,10 +36,10 @@ class System:
         - Volumes are in Å³.
         - Energies are in eV and are extensive with respect to the configuration
           size (``number_of_atoms``).
-        - Entropies and heat capacities are in eV/K and are extensive with 
+        - Entropies and heat capacities are in eV/K and are extensive with
           respect to the configuration size (``number_of_atoms``).
         - Bulk moduli and pressures are in GPa.
-        - Current version only supports one common tangent construction 
+        - Current version only supports one common tangent construction
           for phase diagrams.
 
     Args:
@@ -48,7 +48,7 @@ class System:
         ground_state (str): Name of the ground state configuration.
 
     Raises:
-        ValueError: If configurations have inconsistent number of atoms, 
+        ValueError: If configurations have inconsistent number of atoms,
         volumes, or temperatures.
 
     Attributes:
@@ -99,13 +99,14 @@ class System:
         # Get reference values from the ground state configuration
         ground_state = next(config for config in configurations.values() if config.name == self.ground_state)
 
-        ref_num_atoms = ground_state.number_of_atoms        
+        ref_num_atoms = ground_state.number_of_atoms
         ref_volumes = ground_state.volumes
         ref_temperatures = ground_state.temperatures
         self.ground_state = ground_state.name
         self.ground_state_helmholtz_energies = ground_state.helmholtz_energies
 
-        # Ensure all configurations are consistent in number of atoms, temperatures, and volumes
+        # Ensure all configurations are consistent in number of atoms, temperatures, and
+        # volumes
         for name, config in configurations.items():
             if config.number_of_atoms != ref_num_atoms:
                 raise ValueError("Number of atoms for configurations are not the same.")
@@ -138,7 +139,8 @@ class System:
 
         # Calculated properties (P, T)
         # Dictionary to store pressure-temperature dependent properties
-        # Format: {f"{P:.2f}_GPa": {"helmholtz_energy_pv", "V0", "G0", "S0", "Sconf", "B0", "CTE", "LCTE", "Cp"}}
+        # Format: {f"{P:.2f}_GPa": {"helmholtz_energy_pv", "V0", "G0", "S0", "Sconf",
+        # "B0", "CTE", "LCTE", "Cp"}}
         self.pt_properties = {}
 
         # Initialize pressure-temperature and volume-temperature diagrams
@@ -155,14 +157,14 @@ class System:
 
     def calculate_partition_functions(self) -> None:
         """
-        Calculate the partition function for each configuration using a reference
-        ground-state Helmholtz free energy.
+        Calculate the partition function for each configuration using a 
+        reference ground-state Helmholtz free energy.
 
         The configuration partition functions are computed as
         :math:`Z_k(T, V) = \exp(-\frac{F_k - F_{\mathrm{GS}}}{k_B T})`.
 
-        The total partition function of the system is then obtained by summing over
-        all configurations:
+        The total partition function of the system is then obtained by 
+        summing over all configurations:
         :math:`Z(T, V) = \sum_k g_k Z_k`.
         """
 
@@ -208,7 +210,8 @@ class System:
 
     def calculate_probabilities(self) -> None:
         """
-        Calculate the configuration probabilities :math:`p_k(T, V) = \frac{g_k Z_k}{Z}`.
+        Calculate the configuration probabilities 
+        :math:`p_k(T, V) = \frac{g_k Z_k}{Z}`.
 
         Raises:
             ValueError: If the system partition function is not calculated.
@@ -229,7 +232,9 @@ class System:
         Calculate the Helmholtz free energies for the system :math:`F(T, V)`.
 
         Args:
-            ground_state_helmholtz_energies (np.ndarray): Reference Helmholtz free energies :math:`F_{GS}(T, V)` to shift the configuration Helmholtz free energies in the exponential.
+            ground_state_helmholtz_energies (np.ndarray): 
+            Reference ground-state Helmholtz free energies :math:`F_{GS}(T, V)` 
+            to shift the configuration Helmholtz free energies in the exponential.
 
         Raises:
             ValueError: If the system partition functions are not calculated.
@@ -266,11 +271,14 @@ class System:
 
     def calculate_helmholtz_energies_dV(self) -> None:
         """
-        Calculate the first derivative of the Helmholtz energy with respect to volume.
+        Calculate the first derivative of the Helmholtz energy with 
+        respect to volume :math:`\partial F / \partial V`.
 
         Raises:
-            ValueError: If probabilities or dF/dV are missing for any configuration.
+            ValueError: If the probabilities or Helmholtz energy first 
+            derivatives are missing for any configuration.
         """
+        
         # Initialize dF/dV array
         self.helmholtz_energies_dV = np.zeros((self._n_temps, self._n_vols))
 
