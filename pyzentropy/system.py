@@ -160,11 +160,9 @@ class System:
         Calculate the partition function for each configuration using a
         reference ground-state Helmholtz free energy.
 
-        The configuration partition functions are computed as
-        :math:`Z_k(T, V) = \exp(-\frac{F_k - F_{\mathrm{GS}}}{k_B T})`.
-
-        The total partition function of the system is then obtained by
-        summing over all configurations:
+        The configuration partition functions :math:`Z_k(T, V)` are first 
+        computed. Then, the total partition function of the system is 
+        then obtained by summing over all configurations:
         :math:`Z(T, V) = \sum_k g_k Z_k`.
         """
 
@@ -210,8 +208,7 @@ class System:
 
     def calculate_probabilities(self) -> None:
         """
-        Calculate the configuration probabilities
-        :math:`p_k(T, V) = \frac{g_k Z_k}{Z}`.
+        Calculate the configuration probabilities :math:`p_k(T, V)`.
 
         Raises:
             ValueError: If the system partition function is not calculated.
@@ -364,7 +361,7 @@ class System:
 
     def calculate_entropies(self) -> None:
         """
-        Calculate the configurational entropy :math:`S_\mathrm{config}(T, V)`
+        Calculate the configurational entropy :math:`S_\mathrm{conf}(T, V)`
         and total entropy :math:`S(T, V)` for the system.
 
         Raises:
