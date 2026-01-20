@@ -160,8 +160,8 @@ class System:
         Calculate the partition function for each configuration using a
         reference ground-state Helmholtz free energy.
 
-        The configuration partition functions :math:`Z_k(T, V)` are first 
-        computed. Then, the total partition function of the system is 
+        The configuration partition functions :math:`Z_k(T, V)` are first
+        computed. Then, the total partition function of the system is
         then obtained by summing over all configurations:
         :math:`Z(T, V) = \sum_k g_k Z_k`.
         """
@@ -229,9 +229,9 @@ class System:
         Calculate the Helmholtz free energies for the system :math:`F(T, V)`.
 
         Args:
-            ground_state_helmholtz_energies (np.ndarray):
-            Reference ground-state Helmholtz free energies :math:`F_{GS}(T, V)`
-            to shift the configuration Helmholtz free energies in the exponential.
+            ground_state_helmholtz_energies (np.ndarray): Reference ground-state
+                Helmholtz free energies :math:`F_{\mathrm{GS}}(T, V)` to shift the
+                configuration Helmholtz free energies in the exponential.
 
         Raises:
             ValueError: If the system partition functions are not calculated.
@@ -273,7 +273,7 @@ class System:
 
         Raises:
             ValueError: If the probabilities or Helmholtz energy first
-            derivatives are missing for any configuration.
+                derivatives are missing for any configuration.
         """
 
         # Initialize dF/dV array
@@ -298,8 +298,8 @@ class System:
         with respect to volume :math:`\partial^2 F / \partial V^2`.
 
         Raises:
-            ValueError: If the probabilities, or the Helmholtz energy
-            first and second derivatives are missing for any configuration.
+            ValueError: If the probabilities, or the Helmholtz energy first and
+                second derivatives are missing for any configuration.
         """
 
         # Check that the probabilities, dF/dV, and d2F/dV2 are calculated for each configuration
@@ -350,8 +350,8 @@ class System:
         and volume :math:`B(T, V)`.
 
         Raises:
-            ValueError: If the second derivative of the Helmholtz free
-            energy with respect to volume is not calculated.
+            ValueError: If the second derivative of the Helmholtz free energy
+                with respect to volume is not calculated.
         """
 
         # If helmholtz_energies_d2V2 is not calculated, raise error
@@ -366,7 +366,7 @@ class System:
 
         Raises:
             ValueError: If probabilities or entropies are missing for
-            any configuration.
+                any configuration.
         """
 
         # Check that probabilities and entropies are calculated for each configuration
@@ -409,7 +409,7 @@ class System:
 
         Raises:
             ValueError: If probabilities, heat capacities, or internal
-            energies are missing for any configuration.
+                energies are missing for any configuration.
         """
 
         # Check that the probabilities, heat capacities, and internal energies are calculated for each configuration
@@ -664,15 +664,16 @@ class System:
         Args:
             dP (float): Pressure increment in GPa. Default is 0.2 GPa.
             volume_step_size (float): Step size for volume when searching
-            for the miscibility gap. Default is 1e-4.
+                for the miscibility gap. Default is 1e-4.
             atol (float): Absolute tolerance for convergence in the common
-            tangent search. Default is 1e-6.
+                tangent search. Default is 1e-6.
 
         Raises:
             ValueError: If any of the Helmholtz energies or their first
                 derivatives are not calculated, or if probabilities for
                 any configuration are not calculated.
         """
+
         # Raise errors if required attributes are missing
         if self.helmholtz_energies_dV is None:
             raise ValueError(
@@ -859,11 +860,11 @@ class System:
 
         Args:
             type (str): The type of plot to generate
-            (e.g., "helmholtz_energy_vs_volume").
+                (e.g., "helmholtz_energy_vs_volume").
             selected_temperatures (np.ndarray, optional): Temperatures
-            to highlight in the plot.
+                to highlight in the plot.
             selected_volumes (np.ndarray, optional): Volumes to highlight
-            in the plot.
+                in the plot.
             width (int, optional): Width of the plot in pixels.
             height (int, optional): Height of the plot in pixels.
 
@@ -874,8 +875,8 @@ class System:
             ValueError: If:
                 - The plot type is invalid.
                 - Required data for the plot (e.g., Helmholtz energies,
-                probabilities, volumes, pressure, etc.) is missing or
-                not calculated.
+                  probabilities, volumes, pressure, etc.) is missing or
+                  not calculated.
         """
 
         # Central dictionary for plot behavior
@@ -1088,10 +1089,10 @@ class System:
 
         Args:
             type (str): The type of plot to generate
-            (e.g., "helmholtz_energy_pv_vs_volume").
+                (e.g., "helmholtz_energy_pv_vs_volume").
             P (float): Pressure in GPa for the plot. Default is 0.00 GPa.
             selected_temperatures (np.ndarray, optional): Temperatures
-            to highlight in the helmholtz_energy_pv_vs_volume plot.
+                to highlight in the helmholtz_energy_pv_vs_volume plot.
             width (int, optional): Width of the plot in pixels.
             height (int, optional): Height of the plot in pixels.
 
@@ -1103,8 +1104,9 @@ class System:
                 - Properties at P are not calculated.
                 - The plot type is invalid.
                 - Phase diagram data is not calculated when wanting to
-                plot the phase diagram.
+                  plot the phase diagram.
         """
+
         # Raise ValueError if properties at P are not calculated
         if f"{P:.2f}_GPa" not in self.pt_properties:
             raise ValueError(f"Properties at {P:.2f} GPa not calculated. Run calculate_pressure_properties first.")
