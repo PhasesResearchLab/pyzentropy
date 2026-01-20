@@ -39,6 +39,7 @@ class System:
         - Entropies and heat capacities are in eV/K and are extensive with respect
           to the configuration size (``number_of_atoms``).
         - Bulk moduli and pressures are in GPa.
+        - Current version only supports one common tangent construction for phase diagrams.
 
     Args:
         configurations (dict[str, Configuration]): 
@@ -156,7 +157,7 @@ class System:
         ground-state Helmholtz free energy.
 
         The configuration partition functions are computed as
-        :math:`Z_k = \exp\!\left[-(F_k - F_k^{\mathrm{ref}}) / (k_B T)\right]`.
+        :math:`Z_k = \exp\left[-\frac{F_k - F_{\mathrm{GS}}}{k_B T}\right]`.
 
         The total partition function of the system is then obtained by summing over
         all configurations:
@@ -202,7 +203,7 @@ class System:
             # Replace inf values with nan
             partition_functions[np.isinf(partition_functions)] = np.nan
         self.partition_functions = partition_functions
-
+    #TODO: continue below!
     def calculate_probabilities(self) -> None:
         """
         Calculate the probability of each configuration at every temperature and volume,
