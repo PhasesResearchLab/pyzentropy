@@ -49,7 +49,7 @@ class System:
 
     Raises:
         ValueError: If configurations have inconsistent number of atoms,
-        volumes, or temperatures.
+            volumes, or temperatures.
 
     Attributes:
         configurations (dict[str, Configuration]):
