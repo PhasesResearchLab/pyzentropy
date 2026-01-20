@@ -23,12 +23,12 @@ class System:
     This class provides methods to calculate system thermodynamic quantities,
     such as Helmholtz free energies and related properties. In addition to
     properties dependent on temperature and volume, it can also calculate
-    properties at fixed pressure and generate phase diagrams. 
+    properties at fixed pressure and generate phase diagrams.
 
     Properties dependent on temperature and volume can be plotted either as a
     function of temperature or volume. Properties at fixed pressure are plotted
     as a function of temperature.
-    
+
     Notes:
         - All array-valued thermodynamic quantities follow the shape
           ``(n_temperatures, n_volumes)``.
@@ -36,32 +36,34 @@ class System:
         - Volumes are in Å³.
         - Energies are in eV and are extensive with respect to the configuration
           size (``number_of_atoms``).
-        - Entropies and heat capacities are in eV/K and are extensive with respect
-          to the configuration size (``number_of_atoms``).
+        - Entropies and heat capacities are in eV/K and are extensive with 
+          respect to the configuration size (``number_of_atoms``).
         - Bulk moduli and pressures are in GPa.
-        - Current version only supports one common tangent construction for phase diagrams.
+        - Current version only supports one common tangent construction 
+          for phase diagrams.
 
     Args:
-        configurations (dict[str, Configuration]): 
+        configurations (dict[str, Configuration]):
             Dictionary mapping configuration names to Configuration objects.
         ground_state (str): Name of the ground state configuration.
 
     Raises:
-        ValueError: If configurations have inconsistent number of atoms, volumes, or temperatures.
-        
+        ValueError: If configurations have inconsistent number of atoms, 
+        volumes, or temperatures.
+
     Attributes:
-        configurations (dict[str, Configuration]): 
+        configurations (dict[str, Configuration]):
             Dictionary mapping configuration names to Configuration objects.
-        ground_state (str): 
+        ground_state (str):
             Name of the ground state configuration.
-        number_of_atoms (int): 
+        number_of_atoms (int):
             Number of atoms in the system.
-        volumes (np.ndarray): 
+        volumes (np.ndarray):
             Volume grid of shape ``(n_volumes,)``.
-        temperatures (np.ndarray): 
+        temperatures (np.ndarray):
             Temperature grid of shape ``(n_temperatures,)``.
-        
-        partition_functions (np.ndarray): 
+
+        partition_functions (np.ndarray):
             Partition functions :math:`Z(T, V)`.
         helmholtz_energies (np.ndarray):
             Helmholtz free energies :math:`F(T, V)`.
@@ -69,23 +71,23 @@ class System:
             First volume derivatives :math:`\partial F / \partial V`.
         helmholtz_energies_d2V2 (np.ndarray):
             Second volume derivatives :math:`\partial^2 F / \partial V^2`.
-        ground_state_helmholtz_energies (np.ndarray): 
-            Helmholtz free energies of the ground state configuration 
+        ground_state_helmholtz_energies (np.ndarray):
+            Helmholtz free energies of the ground state configuration
             :math:`F_{\mathrm{GS}}(T, V)`.
-        entropies (np.ndarray): 
+        entropies (np.ndarray):
             Entropies :math:`S(T, V)`.
-        configurational_entropies (np.ndarray): 
+        configurational_entropies (np.ndarray):
             Configurational entropies :math:`S_{\mathrm{conf}}(T, V)`.
-        bulk_moduli (np.ndarray): 
+        bulk_moduli (np.ndarray):
             Bulk moduli :math:`B(T, V)`.
-        heat_capacities (np.ndarray): 
+        heat_capacities (np.ndarray):
             Heat capacities at constant volume :math:`C_V(T, V)`.
-            
-        pt_properties (dict): 
+
+        pt_properties (dict):
             Dictionary storing pressure-temperature dependent properties.
-        pt_phase_diagram (dict): 
+        pt_phase_diagram (dict):
             Pressure-temperature phase diagram data.
-        vt_phase_diagram (dict): 
+        vt_phase_diagram (dict):
             Volume-temperature phase diagram data.
     """
 
@@ -95,9 +97,9 @@ class System:
         self.ground_state = ground_state
 
         # Get reference values from the ground state configuration
-        ground_state = next(config for name, config in configurations.items() if config.name == self.ground_state)
+        ground_state = next(config for config in configurations.values() if config.name == self.ground_state)
 
-        ref_num_atoms = ground_state.number_of_atoms
+        ref_num_atoms = ground_state.number_of_atoms        
         ref_volumes = ground_state.volumes
         ref_temperatures = ground_state.temperatures
         self.ground_state = ground_state.name
@@ -153,9 +155,15 @@ class System:
 
     def calculate_partition_functions(self) -> None:
         """
-        The configuration partition functions :math:`Z_k(T, V)` are first computed,
-        and then the total partition function of the system is obtained by summing
-        over all configurations: :math:`Z = \sum_k g_k Z_k`.
+        Calculate the partition function for each configuration using a reference
+        ground-state Helmholtz free energy.
+
+        The configuration partition functions are computed as
+        :math:`Z_k(T, V) = \exp(-\frac{F_k - F_{\mathrm{GS}}}{k_B T})`.
+
+        The total partition function of the system is then obtained by summing over
+        all configurations:
+        :math:`Z(T, V) = \sum_k g_k Z_k`.
         """
 
         # Initialize config partition functions
@@ -197,15 +205,15 @@ class System:
             # Replace inf values with nan
             partition_functions[np.isinf(partition_functions)] = np.nan
         self.partition_functions = partition_functions
-    #TODO: continue below!
+
     def calculate_probabilities(self) -> None:
         """
-        Calculate the probability of each configuration at every temperature and volume,
-        based on the partition function.
+        Calculate the configuration probabilities :math:`p_k(T, V) = \frac{g_k Z_k}{Z}`.
 
         Raises:
             ValueError: If the system partition function is not calculated.
         """
+
         # Check that system partition functions are calculated
         if self.partition_functions is None:
             raise ValueError("Partition functions not calculated. Call calculate_partition_functions() first.")
@@ -218,14 +226,15 @@ class System:
 
     def calculate_helmholtz_energies(self, ground_state_helmholtz_energies: np.ndarray) -> None:
         """
-        Calculate the Helmholtz energy for the system at each temperature and volume.
+        Calculate the Helmholtz free energies for the system :math:`F(T, V)`.
 
         Args:
-            ground_state_helmholtz_energies (np.ndarray): Reference Helmholtz energies to shift the calculated values.
+            ground_state_helmholtz_energies (np.ndarray): Reference Helmholtz free energies :math:`F_{GS}(T, V)` to shift the configuration Helmholtz free energies in the exponential.
 
         Raises:
-            ValueError: If the system partition function is not calculated.
+            ValueError: If the system partition functions are not calculated.
         """
+
         # Check that system partition functions are calculated
         if self.partition_functions is None:
             raise ValueError("Partition functions not calculated. Call calculate_partition_functions() first.")
