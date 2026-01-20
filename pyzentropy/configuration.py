@@ -50,8 +50,6 @@ class Configuration:
             First volume derivatives :math:`\partial F_k / \partial V`.
         helmholtz_energies_d2V2 (np.ndarray):
             Second volume derivatives :math:`\partial^2 F_k / \partial V^2`.
-        reference_helmholtz_energies (np.ndarray):
-            Reference Helmholtz free energies to shift by.
         entropies (np.ndarray):
             Entropies :math:`S_k(T, V)`. Defaults to None.
         heat_capacities (np.ndarray):
