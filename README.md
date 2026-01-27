@@ -1,26 +1,36 @@
-## pyzentropy
+# pyzentropy
 [![Testing](https://github.com/nhew1994/pyzentropy/actions/workflows/test.yml/badge.svg)](https://github.com/nhew1994/pyzentropy/actions/workflows/test.yml)
 
-## Installation
-It is recommended to first set up a virtual environment using Conda:
+# Installation
+## Recommended: Create a Virtual Environment
 
-    conda create -n pyzentropy python=3.12      
+Using Conda:
+
+    conda create -n pyzentropy python=3.12
     conda activate pyzentropy
 
-Clone the main branch of the repository:
-    
+## Install pyzentropy
+### From PyPI (coming soon)
+
+    python -m pip install pyzentropy
+
+<sub>PyPI installation will be available in a future release. For now, please install from source as described below.</sub>
+
+### From Source 
+
+Clone the repository:
+
     git clone https://github.com/nhew1994/pyzentropy.git
-
-Or clone a specific branch:
-    
-    git clone -b <branch_name> https://github.com/nhew1994/pyzentropy.git
-
-  Then move to `pyzentropy` directory and install in editable (`-e`) mode.
-
     cd pyzentropy
     python -m pip install -e .
 
-## Example notebooks
+Or clone a specific branch:
+
+    git clone -b <branch_name> https://github.com/nhew1994/pyzentropy.git
+    cd pyzentropy
+    python -m pip install -e .
+
+# Example notebooks
 Click the badge below to open the project in GitHub Codespaces.  
 Then, browse the `examples/codespace` folder to explore and run the example notebooks:
 
