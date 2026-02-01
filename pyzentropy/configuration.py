@@ -34,25 +34,25 @@ class Configuration:
           respect to the configuration size (``number_of_atoms``).
 
     Args:
-        name (str):
+        name:
             Name or label of the configuration.
-        multiplicity (int):
+        multiplicity:
             Degeneracy factor used in statistical weighting.
-        number_of_atoms (int):
+        number_of_atoms:
             Number of atoms in the configuration.
-        volumes (np.ndarray):
+        volumes:
             Volume grid of shape ``(n_volumes,)``.
-        temperatures (np.ndarray):
+        temperatures:
             Temperature grid of shape ``(n_temperatures,)``.
-        helmholtz_energies (np.ndarray):
+        helmholtz_energies:
             Helmholtz free energies :math:`F_k(T, V)`.
-        helmholtz_energies_dV (np.ndarray):
+        helmholtz_energies_dV:
             First volume derivatives :math:`\partial F_k / \partial V`.
-        helmholtz_energies_d2V2 (np.ndarray):
+        helmholtz_energies_d2V2:
             Second volume derivatives :math:`\partial^2 F_k / \partial V^2`.
-        entropies (np.ndarray):
+        entropies:
             Entropies :math:`S_k(T, V)`. Defaults to None.
-        heat_capacities (np.ndarray):
+        heat_capacities:
             Heat capacities at constant volume :math:`C_{V,k}(T, V)`.
             Defaults to None.
 
@@ -60,35 +60,35 @@ class Configuration:
         ValueError: If any input array does not match the expected shape.
 
     Attributes:
-        name (str):
+        name:
             Name or label of the configuration.
-        multiplicity (int):
+        multiplicity:
             Degeneracy factor used in statistical weighting.
-        number_of_atoms (int):
+        number_of_atoms:
             Number of atoms in the configuration.
-        volumes (np.ndarray):
+        volumes:
             Volume grid of shape ``(n_volumes,)``.
-        temperatures (np.ndarray):
+        temperatures:
             Temperature grid of shape ``(n_temperatures,)``.
 
-        helmholtz_energies (np.ndarray):
+        helmholtz_energies:
             Helmholtz free energies :math:`F_k(T, V)`.
-        helmholtz_energies_dV (np.ndarray):
+        helmholtz_energies_dV:
             First volume derivatives :math:`\partial F_k / \partial V`.
-        helmholtz_energies_d2V2 (np.ndarray):
+        helmholtz_energies_d2V2:
             Second volume derivatives :math:`\partial^2 F_k / \partial V^2`.
-        entropies (np.ndarray):
+        entropies:
             Entropies :math:`S_k(T, V)`.
-        heat_capacities (np.ndarray):
+        heat_capacities:
             Heat capacities at constant volume :math:`C_{V,k}(T, V)`.
 
-        internal_energies (np.ndarray):
+        internal_energies:
             Internal energies :math:`E_k(T, V)`, computed from stored
             thermodynamic data.
-        partition_functions (np.ndarray):
+        partition_functions:
             Configuration partition functions :math:`Z_k(T, V)`,
             computed by a `System` object during ensemble calculations.
-        probabilities (np.ndarray):
+        probabilities:
             Configuration probabilities :math:`p_k(T, V)`,
             computed by a `System` object during ensemble calculations.
     """
@@ -161,26 +161,26 @@ class Configuration:
         Plot thermodynamic properties as a function of temperature or volume.
 
         Args:
-            type (str):
+            type:
                 Must be one of the following values:
                 ``'helmholtz_energy_vs_temperature'``, ``'entropy_vs_temperature'``,
                 ``'heat_capacity_vs_temperature'``, ``'internal_energy_vs_temperature'``,
                 ``'helmholtz_energy_vs_volume'``, ``'entropy_vs_volume'``,
                 ``'heat_capacity_vs_volume'``, or ``'internal_energy_vs_volume'``.
-            selected_temperatures (np.ndarray, optional): Temperatures to plot
-            (for fixed temperature plots).
-            selected_volumes (np.ndarray, optional): Volumes to plot
-            (for fixed volume plots).
-            width (int, optional): Plot width in pixels.
-            height (int, optional): Plot height in pixels.
+            selected_temperatures: Temperatures to plot
+                (for fixed temperature plots).
+            selected_volumes: Volumes to plot
+                (for fixed volume plots).
+            width: Plot width in pixels.
+            height: Plot height in pixels.
 
         Raises:
             ValueError: If an invalid plot type is provided.
             ValueError: If internal_energies is None when calling internal
-            energy plots
+                energy plots
             ValueError: If entropies is None when calling entropy plots
             ValueError: If heat_capacities is None when calling heat
-            capacity plots
+                capacity plots
 
         Returns:
             go.Figure: The generated plotly figure.
@@ -301,8 +301,8 @@ class Configuration:
         in `targets`.
 
         Args:
-            values (np.ndarray): Array to search.
-            targets (np.ndarray): Target values to match.
+            values: Array to search.
+            targets: Target values to match.
 
         Returns:
             list: Indices of closest matches.

@@ -7,11 +7,11 @@ def format_plot(fig: go.Figure, xtitle: str, ytitle: str, width: int = 840, heig
     Apply consistent formatting to a Plotly figure.
 
     Args:
-        fig (go.Figure): Plotly figure to format.
-        xtitle (str): Title of the x-axis.
-        ytitle (str): Title of the y-axis.
-        width (int, optional): Plot width in pixels. Defaults to 840.
-        height (int, optional): Plot height in pixels. Defaults to 600.
+        fig: Plotly figure to format.
+        xtitle: Title of the x-axis.
+        ytitle: Title of the y-axis.
+        width: Plot width in pixels. Defaults to 840.
+        height: Plot height in pixels. Defaults to 600.
     """
 
     fig.update_layout(

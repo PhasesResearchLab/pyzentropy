@@ -43,51 +43,51 @@ class System:
           for phase diagrams.
 
     Args:
-        configurations (dict[str, Configuration]):
+        configurations:
             Dictionary mapping configuration names to Configuration objects.
-        ground_state (str): Name of the ground state configuration.
+        ground_state: Name of the ground state configuration.
 
     Raises:
         ValueError: If configurations have inconsistent number of atoms,
             volumes, or temperatures.
 
     Attributes:
-        configurations (dict[str, Configuration]):
+        configurations:
             Dictionary mapping configuration names to Configuration objects.
-        ground_state (str):
+        ground_state:
             Name of the ground state configuration.
-        number_of_atoms (int):
+        number_of_atoms:
             Number of atoms in the system.
-        volumes (np.ndarray):
+        volumes:
             Volume grid of shape ``(n_volumes,)``.
-        temperatures (np.ndarray):
+        temperatures:
             Temperature grid of shape ``(n_temperatures,)``.
 
-        partition_functions (np.ndarray):
+        partition_functions:
             Partition functions :math:`Z(T, V)`.
-        helmholtz_energies (np.ndarray):
+        helmholtz_energies:
             Helmholtz free energies :math:`F(T, V)`.
-        helmholtz_energies_dV (np.ndarray):
+        helmholtz_energies_dV:
             First volume derivatives :math:`\partial F / \partial V`.
-        helmholtz_energies_d2V2 (np.ndarray):
+        helmholtz_energies_d2V2:
             Second volume derivatives :math:`\partial^2 F / \partial V^2`.
-        ground_state_helmholtz_energies (np.ndarray):
+        ground_state_helmholtz_energies:
             Helmholtz free energies of the ground state configuration
             :math:`F_{\mathrm{GS}}(T, V)`.
-        entropies (np.ndarray):
+        entropies:
             Entropies :math:`S(T, V)`.
-        configurational_entropies (np.ndarray):
+        configurational_entropies:
             Configurational entropies :math:`S_{\mathrm{conf}}(T, V)`.
-        bulk_moduli (np.ndarray):
+        bulk_moduli:
             Bulk moduli :math:`B(T, V)`.
-        heat_capacities (np.ndarray):
+        heat_capacities:
             Heat capacities at constant volume :math:`C_V(T, V)`.
 
-        pt_properties (dict):
+        pt_properties:
             Dictionary storing pressure-temperature dependent properties.
-        pt_phase_diagram (dict):
+        pt_phase_diagram:
             Pressure-temperature phase diagram data.
-        vt_phase_diagram (dict):
+        vt_phase_diagram:
             Volume-temperature phase diagram data.
     """
 
@@ -229,7 +229,7 @@ class System:
         Calculate the Helmholtz free energies for the system :math:`F(T, V)`.
 
         Args:
-            ground_state_helmholtz_energies (np.ndarray): Reference ground-state
+            ground_state_helmholtz_energies: Reference ground-state
                 Helmholtz free energies :math:`F_{\mathrm{GS}}(T, V)` to shift the
                 configuration Helmholtz free energies in the exponential.
 
@@ -459,7 +459,7 @@ class System:
         :math:`\mathrm{LCTE}`, :math:`C_p` at a given pressure.
 
         Args:
-            P (float): Pressure in GPa.
+            P: Pressure in GPa.
 
         Raises:
             ValueError: If any Helmholtz energies or their derivatives
@@ -662,10 +662,10 @@ class System:
         for the system.
 
         Args:
-            dP (float): Pressure increment in GPa. Default is 0.2 GPa.
-            volume_step_size (float): Step size for volume when searching
+            dP: Pressure increment in GPa. Default is 0.2 GPa.
+            volume_step_size: Step size for volume when searching
                 for the miscibility gap. Default is 1e-4.
-            atol (float): Absolute tolerance for convergence in the common
+            atol: Absolute tolerance for convergence in the common
                 tangent search. Default is 1e-6.
 
         Raises:
@@ -859,14 +859,14 @@ class System:
         Generate a plot vs. volume or temperature for the specified thermodynamic quantity.
 
         Args:
-            type (str): The type of plot to generate
+            type: The type of plot to generate
                 (e.g., "helmholtz_energy_vs_volume").
-            selected_temperatures (np.ndarray, optional): Temperatures
+            selected_temperatures: Temperatures
                 to highlight in the plot.
-            selected_volumes (np.ndarray, optional): Volumes to highlight
+            selected_volumes: Volumes to highlight
                 in the plot.
-            width (int, optional): Width of the plot in pixels.
-            height (int, optional): Height of the plot in pixels.
+            width: Width of the plot in pixels.
+            height: Height of the plot in pixels.
 
         Returns:
             plotly.graph_objects.Figure: The generated plotly figure.
@@ -1087,13 +1087,13 @@ class System:
         Generate a plot for the specified thermodynamic quantity.
 
         Args:
-            type (str): The type of plot to generate
+            type: The type of plot to generate
                 (e.g., "helmholtz_energy_pv_vs_volume").
-            P (float): Pressure in GPa for the plot. Default is 0.00 GPa.
-            selected_temperatures (np.ndarray, optional): Temperatures
+            P: Pressure in GPa for the plot. Default is 0.00 GPa.
+            selected_temperatures: Temperatures
                 to highlight in the helmholtz_energy_pv_vs_volume plot.
-            width (int, optional): Width of the plot in pixels.
-            height (int, optional): Height of the plot in pixels.
+            width: Width of the plot in pixels.
+            height: Height of the plot in pixels.
 
         Returns:
             plotly.graph_objects.Figure: The generated plotly figure.
@@ -1363,8 +1363,8 @@ class System:
         Find indices of the closest matches in `values` for each target in `targets`.
 
         Args:
-            values (np.ndarray): Array of values to search.
-            targets (np.ndarray): Array of target values.
+            values: Array of values to search.
+            targets: Array of target values.
 
         Returns:
             list: List of indices in `values` closest to each target.
