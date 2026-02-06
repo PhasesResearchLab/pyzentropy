@@ -1,65 +1,66 @@
 # Configuration file for the Sphinx documentation builder.
+#
+# For the full list of built-in configuration values, see the documentation:
+# https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-# -- Project information
+
+# -- Project information -----------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'pyzentropy'
-copyright = '2025, Hew, Nigel'
-author = 'Hew, Nigel'
-language = 'en'
+copyright = '2026, Nigel Lee En Hew'
+author = 'Nigel Lee En Hew'
+release = '0.1.0'
+__version__ = release
 
-# -- General configuration
+# -- General configuration ---------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = [
-    'sphinx.ext.linkcode',
-    'sphinx.ext.napoleon',
-    'sphinx_autodoc_typehints',
-    'sphinx.ext.duration',
-    'sphinx.ext.doctest',
-    'myst_nb',
-    'sphinx_github_changelog',
-    'sphinx_rtd_size',
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.intersphinx',
-]
-autosummary_generate = True
-autodoc_member_order = 'bysource'
-
-# -- Options for napoleon ----------------------------------------------------
-napoleon_google_docstring = True
-napoleon_numpy_docstring = True
-napoleon_include_init_with_doc = False
-napoleon_include_private_with_doc = False
-napoleon_include_special_with_doc = True
-napoleon_use_admonition_for_examples = False
-napoleon_use_admonition_for_notes = False
-napoleon_use_admonition_for_references = False
-napoleon_use_ivar = False
-napoleon_use_param = True
-napoleon_use_rtype = True
-napoleon_preprocess_types = False
-napoleon_type_aliases = None
-napoleon_attr_annotations = True
-
-intersphinx_mapping = {
-    'python': ('https://docs.python.org/3/', None),
-    'sphinx': ('https://www.sphinx-doc.org/en/master/', None),
-}
-intersphinx_disabled_domains = ['std']
+extensions = ['sphinx.ext.linkcode',
+              'sphinx.ext.duration',
+              'sphinx.ext.coverage',
+              'sphinx.ext.napoleon',
+              'sphinx.ext.autodoc',
+              'sphinx_autodoc_typehints',
+              'sphinx_github_changelog',
+              'sphinx_rtd_size',
+              'sphinx.ext.mathjax',
+              'myst_nb'
+              ]
 
 templates_path = ['_templates']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
-# -- Options for HTML output
+# -- Options for HTML output -------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = 'sphinx_rtd_theme'
+html_static_path = ['_static']
 
+# Resolve function for the linkcode extension.
 def linkcode_resolve(domain, info):
-    if domain != 'py':
-        return None
-    if not info['module']:
-        return None
-    filename = info['module'].replace('.', '/')
-    return "https://github.com/PhasesResearchLab/pyzentropy/blob/main/%s.py" % filename
+    def find_source():
+        import inspect
+        import os, sys
+        obj = sys.modules[info["module"]]
+        for part in info["fullname"].split("."):
+            obj = getattr(obj, part)
 
-# -- Options for EPUB output
-epub_show_urls = 'footnote'
+        fn = inspect.getsourcefile(obj)
+        fn = os.path.relpath(fn, start=os.path.dirname(__file__))
+        source, lineno = inspect.getsourcelines(obj)
+        return fn, lineno, lineno + len(source) - 1
+
+    if domain != "py" or not info["module"]:
+        return None
+
+    try:
+        rel_path, line_start, line_end = find_source()
+        # __file__ is imported from pyzentropy
+        filename = f"pyzentropy/{rel_path}#L{line_start}-L{line_end}"
+    except Exception:
+        # no need to be relative to core here as module includes full path.
+        filename = info["module"].replace(".", "/") + ".py"
+
+    tag = "v" + str(__version__)
+    return f"https://github.com/PhasesResearchLab/pyzentropy/blob/{tag}/{filename}"
