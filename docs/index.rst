@@ -19,10 +19,3 @@
    :hidden:
    :maxdepth: 2
    :caption: DEVELOPER
-
-.. toctree::
-   citing
-   useful_readings
-   :hidden:
-   :maxdepth: 2
-   :caption: REFERENCES
