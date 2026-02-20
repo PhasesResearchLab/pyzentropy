@@ -1,19 +1,21 @@
-=============
-Documentation
-=============
+.. pyzentropy documentation master file, created by
+   sphinx-quickstart on Thu Jan 22 13:53:50 2026.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
 
-Welcome to the **pyzentropy** documentation. **pyzentropy** is a simple Python package that implements the 
-recursion property of entropy for first-principles thermodynamic calculations.
-
-.. note::
-
-   This project is under active development.
+.. include:: ./_source/overview.rst
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   _source/installation
+   _source/tutorials
+   api
    :hidden:
+   :maxdepth: 2
+   :caption: USER GUIDE
 
-   installation
-   api/api
+.. add contributing
+.. toctree::
    changelog
+   :hidden:
+   :maxdepth: 2
+   :caption: DEVELOPER

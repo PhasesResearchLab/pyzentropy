@@ -8,84 +8,88 @@ import plotly.graph_objects as go
 # Local Imports
 from pyzentropy.plotly_utils import format_plot
 
-BOLTZMANN_CONSTANT = scipy.constants.Boltzmann / scipy.constants.electron_volt  # The Boltzmann constant in eV/K
+# The Boltzmann constant in eV/K
+BOLTZMANN_CONSTANT = scipy.constants.Boltzmann / scipy.constants.electron_volt
 
 
 class Configuration:
     """
     Represents a single configuration and its thermodynamic properties,
     dependent on temperature and volume.
-    
+
     This class stores Helmholtz free energies and related thermodynamic
     quantities for a given configuration, and provides methods for computing
-    derived properties such as internal energy. It is used as a component of
-    a larger thermodynamic `System`.
+    derived properties such as the internal energy. It is used as a component
+    of a larger thermodynamic `System`. The properties can be plotted either
+    as a function of temperature or volume.
 
     Notes:
-        - All array-valued thermodynamic quantities follow the shape ``(n_temperatures, n_volumes)``.
+        - All array-valued thermodynamic quantities follow the shape
+          ``(n_temperatures, n_volumes)``.
         - Temperatures are in Kelvin.
         - Volumes are in Å³.
-        - Energies are in eV and are extensive with respect to the configuration size (`number_of_atoms`).
-        - Entropies and heat capacities are in eV/K and are extensive with respect to the configuration size (`number_of_atoms`).
+        - Energies are in eV and are extensive with respect to the configuration
+          size (``number_of_atoms``).
+        - Entropies and heat capacities are in eV/K and are extensive with
+          respect to the configuration size (``number_of_atoms``).
 
     Args:
-        name (str):
+        name:
             Name or label of the configuration.
-        multiplicity (int):
+        multiplicity:
             Degeneracy factor used in statistical weighting.
-        number_of_atoms (int):
+        number_of_atoms:
             Number of atoms in the configuration.
-        volumes (np.ndarray):
+        volumes:
             Volume grid of shape ``(n_volumes,)``.
-        temperatures (np.ndarray):
+        temperatures:
             Temperature grid of shape ``(n_temperatures,)``.
-        helmholtz_energies (np.ndarray):
+        helmholtz_energies:
             Helmholtz free energies :math:`F_k(T, V)`.
-        helmholtz_energies_dV (np.ndarray):
+        helmholtz_energies_dV:
             First volume derivatives :math:`\partial F_k / \partial V`.
-        helmholtz_energies_d2V2 (np.ndarray):
+        helmholtz_energies_d2V2:
             Second volume derivatives :math:`\partial^2 F_k / \partial V^2`.
-        reference_helmholtz_energies (np.ndarray): 
-            Reference Helmholtz free energies to shift by.
-        entropies (np.ndarray):
+        entropies:
             Entropies :math:`S_k(T, V)`. Defaults to None.
-        heat_capacities (np.ndarray):
-            Heat capacities at constant volume :math:`C_{V,k}(T, V)`. Defaults to None.
-            
+        heat_capacities:
+            Heat capacities at constant volume :math:`C_{V,k}(T, V)`.
+            Defaults to None.
+
     Raises:
         ValueError: If any input array does not match the expected shape.
-            
+
     Attributes:
-        name (str):
+        name:
             Name or label of the configuration.
-        multiplicity (int):
+        multiplicity:
             Degeneracy factor used in statistical weighting.
-        number_of_atoms (int):
+        number_of_atoms:
             Number of atoms in the configuration.
-        volumes (np.ndarray):
+        volumes:
             Volume grid of shape ``(n_volumes,)``.
-        temperatures (np.ndarray):
+        temperatures:
             Temperature grid of shape ``(n_temperatures,)``.
-        
-        helmholtz_energies (np.ndarray):
+
+        helmholtz_energies:
             Helmholtz free energies :math:`F_k(T, V)`.
-        helmholtz_energies_dV (np.ndarray):
+        helmholtz_energies_dV:
             First volume derivatives :math:`\partial F_k / \partial V`.
-        helmholtz_energies_d2V2 (np.ndarray):
+        helmholtz_energies_d2V2:
             Second volume derivatives :math:`\partial^2 F_k / \partial V^2`.
-        entropies (np.ndarray):
+        entropies:
             Entropies :math:`S_k(T, V)`.
-        heat_capacities (np.ndarray):
+        heat_capacities:
             Heat capacities at constant volume :math:`C_{V,k}(T, V)`.
-        
-        internal_energies (np.ndarray):
-            Internal energies :math:`E_k(T, V) = F_k(T, V) + T S_k(T, V)`, computed from
-            stored thermodynamic data.
-        partition_functions (np.ndarray):
-            Configuration partition functions :math:`Z_k(T, V) = \exp(-F_k(T, V)/(k_B T))`,
+
+        internal_energies:
+            Internal energies :math:`E_k(T, V)`, computed from stored
+            thermodynamic data.
+        partition_functions:
+            Configuration partition functions :math:`Z_k(T, V)`,
             computed by a `System` object during ensemble calculations.
-        probabilities (np.ndarray):
-            Configuration probabilities :math:`p_k(T, V) = Z_k(T, V) / Z(T, V)`,
+        probabilities:
+            Configuration probabilities :math:`p_k(T, V)`,
             computed by a `System` object during ensemble calculations.
     """
 
@@ -140,7 +144,8 @@ class Configuration:
 
     def calculate_internal_energies(self) -> None:
         """
-        Calculate internal energies using the formula: E = F + T*S.
+        Compute the internal energies using the formula
+        :math:`E_k(T, V) = F_k(T, V) + T S_k(T, V)`.
         """
         self.internal_energies = self.helmholtz_energies + self.temperatures[:, np.newaxis] * self.entropies
 
@@ -151,25 +156,34 @@ class Configuration:
         selected_volumes: np.ndarray = None,
         width: int = 650,
         height: int = 600,
-    ):
+    ) -> go.Figure:
         """
         Plot thermodynamic properties as a function of temperature or volume.
 
         Args:
-            type (str): Type of plot to generate.
-            selected_temperatures (np.ndarray, optional): Temperatures to plot (for fixed temperature plots).
-            selected_volumes (np.ndarray, optional): Volumes to plot (for fixed volume plots).
-            width (int, optional): Plot width in pixels.
-            height (int, optional): Plot height in pixels.
+            type:
+                Must be one of the following values:
+                ``'helmholtz_energy_vs_temperature'``, ``'entropy_vs_temperature'``,
+                ``'heat_capacity_vs_temperature'``, ``'internal_energy_vs_temperature'``,
+                ``'helmholtz_energy_vs_volume'``, ``'entropy_vs_volume'``,
+                ``'heat_capacity_vs_volume'``, or ``'internal_energy_vs_volume'``.
+            selected_temperatures: Temperatures to plot
+                (for fixed temperature plots).
+            selected_volumes: Volumes to plot
+                (for fixed volume plots).
+            width: Plot width in pixels.
+            height: Plot height in pixels.
 
         Raises:
             ValueError: If an invalid plot type is provided.
-            ValueError: If internal_energies is None when calling internal energy plots
+            ValueError: If internal_energies is None when calling internal
+                energy plots
             ValueError: If entropies is None when calling entropy plots
-            ValueError: If heat_capacities is None when calling heat capacity plots
+            ValueError: If heat_capacities is None when calling heat
+                capacity plots
 
         Returns:
-            plotly.graph_objects.Figure: The generated plotly figure.
+            go.Figure: The generated plotly figure.
         """
 
         plot_data = {
@@ -283,11 +297,12 @@ class Configuration:
 
     def _get_closest_indices(self, values: np.ndarray, targets: np.ndarray) -> list:
         """
-        Find indices of the closest matches in `values` for each target in `targets`.
+        Find indices of the closest matches in `values` for each target
+        in `targets`.
 
         Args:
-            values (np.ndarray): Array to search.
-            targets (np.ndarray): Target values to match.
+            values: Array to search.
+            targets: Target values to match.
 
         Returns:
             list: Indices of closest matches.
