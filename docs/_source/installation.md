@@ -12,12 +12,9 @@ Using Conda:
 
 <span style="font-size:1.3em; font-weight:bold">Install pyzentropy</span>
 
-<span style="font-size:1.1em; font-weight:bold">From PyPI (coming soon)</span>
+<span style="font-size:1.1em; font-weight:bold">From PyPI</span>
 
     python -m pip install pyzentropy
-
-**Note:** PyPI installation will be available in a future release. For now, please install from source as described below.
-
 
 <span style="font-size:1.1em; font-weight:bold">From Source</span>
 
