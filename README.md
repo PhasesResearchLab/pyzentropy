@@ -14,8 +14,6 @@ Using Conda:
 
     python -m pip install pyzentropy
 
-<sub>PyPI installation will be available in a future release. For now, please install from source as described below.</sub>
-
 ### From Source 
 
 Clone the repository:
