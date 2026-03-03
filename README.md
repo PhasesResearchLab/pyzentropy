@@ -10,7 +10,7 @@ Using Conda:
     conda activate pyzentropy
 
 ## Install pyzentropy
-### From PyPI (coming soon)
+### From PyPI
 
     python -m pip install pyzentropy
 
